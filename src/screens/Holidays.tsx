@@ -1,0 +1,360 @@
+// School calendar — month view. Holidays/Sundays yellow, exams blue, other
+// events green (exam on a Sunday/holiday still shows as holiday). Managers
+// tap a date to add/edit/delete a holiday; everyone else (incl. students)
+// views. Events/exams are managed from the web app's Calendar tab.
+import React, { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { api } from '../api';
+import {
+  Button,
+  Card,
+  Empty,
+  ErrorBox,
+  Input,
+  Loading,
+  Screen,
+  Sheet,
+  fmtDate,
+} from '../components/ui';
+import { MANAGER_ROLES } from '../roles';
+import { colors } from '../theme';
+import type { CalendarPayload, Holiday, ScreenProps } from '../types';
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+const WEEK = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+
+const iso = (y: number, m: number, d: number): string =>
+  `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+/** Inclusive "YYYY-MM-DD" range → list of ISO dates. */
+const eachDate = (start: string, end: string): string[] => {
+  const out: string[] = [];
+  const d = new Date(`${start.slice(0, 10)}T00:00:00`);
+  const stop = new Date(`${end.slice(0, 10)}T00:00:00`);
+  while (d <= stop && out.length < 370) {
+    out.push(iso(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+};
+
+type Kind = 'holiday' | 'exam' | 'event';
+
+interface EditingDay {
+  date: string;
+  holiday?: Holiday;
+}
+
+export default function Holidays({ session }: ScreenProps) {
+  const isStudent = session.user_type === 'student';
+  const canEdit = MANAGER_ROLES.includes(session.user_type);
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth()); // 0-11
+  const [items, setItems] = useState<Holiday[] | null>(null);
+  const [cal, setCal] = useState<CalendarPayload | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [editing, setEditing] = useState<EditingDay | null>(null);
+  const [form, setForm] = useState({ name: '', description: '' });
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async (r = false, y = year) => {
+    r && setRefreshing(true);
+    try {
+      const [hols, calendar] = await Promise.all([
+        api<Holiday[]>(`${isStudent ? '/student' : ''}/holidays?year=${y}`),
+        api<CalendarPayload>(`${isStudent ? '/student' : ''}/calendar`),
+      ]);
+      setItems(hols);
+      setCal(calendar);
+      setError(null);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [year, isStudent]);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const byDate: Record<string, Holiday> = {};
+  for (const h of items || []) byDate[String(h.date).slice(0, 10)] = h;
+
+  // exam / event names per date (holiday-category events already arrive via /holidays)
+  const kindColors: Record<Kind, { bg: string; fg: string }> = {
+    holiday: { bg: colors.warnSoft, fg: colors.warn },
+    exam: { bg: colors.infoSoft, fg: colors.info },
+    event: { bg: colors.okSoft, fg: colors.ok },
+  };
+  const marked: Record<'exam' | 'event', Record<string, string[]>> = { exam: {}, event: {} };
+  const mark = (kind: 'exam' | 'event', date: string, name: string) =>
+    (marked[kind][date] ||= []).push(name);
+  for (const e of cal?.events || []) {
+    if (e.category === 'holiday') continue;
+    for (const d of e.dates) mark(e.category, String(d).slice(0, 10), e.title);
+  }
+  for (const x of cal?.exams || []) {
+    const label = x.class_name ? `${x.name} (${x.class_name})` : x.name;
+    for (const d of eachDate(String(x.start_date), String(x.end_date))) mark('exam', d, label);
+  }
+
+  const prev = () => {
+    const m = month === 0 ? 11 : month - 1;
+    const y = month === 0 ? year - 1 : year;
+    setMonth(m); setYear(y);
+  };
+  const next = () => {
+    const m = month === 11 ? 0 : month + 1;
+    const y = month === 11 ? year + 1 : year;
+    setMonth(m); setYear(y);
+  };
+
+  const openDay = (d: number) => {
+    if (!canEdit) return;
+    const date = iso(year, month, d);
+    const holiday = byDate[date];
+    setForm({ name: holiday?.name || '', description: holiday?.description || '' });
+    setEditing({ date, holiday });
+  };
+
+  const save = async () => {
+    if (!editing) return;
+    if (!form.name.trim()) return setError('Holiday name is required');
+    setBusy(true);
+    try {
+      const body = { date: editing.date, name: form.name.trim(), description: form.description.trim() || null };
+      if (editing.holiday) await api(`/holidays/${editing.holiday.id}`, { method: 'PUT', body });
+      else await api('/holidays', { method: 'POST', body });
+      setEditing(null);
+      setError(null);
+      load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    if (!editing?.holiday) return;
+    setBusy(true);
+    try {
+      await api(`/holidays/${editing.holiday.id}`, { method: 'DELETE' });
+      setEditing(null);
+      load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!items && !error) return <Loading />;
+
+  // calendar grid
+  const firstDay = (new Date(year, month, 1).getDay() + 6) % 7; // Mon=0
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells: (number | null)[] = [
+    ...Array<null>(firstDay).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+  while (cells.length % 7) cells.push(null);
+  const todayIso = iso(now.getFullYear(), now.getMonth(), now.getDate());
+  const monthHolidays = (items || [])
+    .filter(h => new Date(h.date).getMonth() === month && new Date(h.date).getFullYear() === year)
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+  const monthEvents = (cal?.events || [])
+    .map(e => ({ ...e, dates: e.dates.filter(d => String(d).startsWith(monthPrefix)).sort() }))
+    .filter(e => e.category !== 'holiday' && e.dates.length > 0);
+  const monthExams = (cal?.exams || []).filter(x =>
+    eachDate(String(x.start_date), String(x.end_date)).some(d => d.startsWith(monthPrefix)));
+
+  return (
+    <View style={{ flex: 1 }}>
+      <Screen refreshing={refreshing} onRefresh={() => load(true)}>
+        <ErrorBox message={error} />
+
+        <Card>
+          {/* month header */}
+          <View style={styles.monthHead}>
+            <TouchableOpacity onPress={prev} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Text style={styles.nav}>‹</Text>
+            </TouchableOpacity>
+            <Text style={styles.monthTitle}>{MONTHS[month]} {year}</Text>
+            <TouchableOpacity onPress={next} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Text style={styles.nav}>›</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* weekday header */}
+          <View style={styles.week}>
+            {WEEK.map(w => (
+              <Text key={w} style={styles.weekDay}>{w}</Text>
+            ))}
+          </View>
+
+          {/* days */}
+          <View style={styles.grid}>
+            {cells.map((d, i) => {
+              const date = d ? iso(year, month, d) : null;
+              const holiday = date ? byDate[date] : undefined;
+              const isSunday = !!d && i % 7 === 6; // last column (Mon-first grid)
+              const isToday = date === todayIso;
+              // Sundays / holidays win over exams; exams win over other events
+              const kind: Kind | null = !date ? null
+                : holiday || isSunday ? 'holiday'
+                : marked.exam[date] ? 'exam'
+                : marked.event[date] ? 'event'
+                : null;
+              const tone = kind ? kindColors[kind] : null;
+              const hasItem = !!date && !!(holiday || marked.exam[date] || marked.event[date]);
+              return (
+                <TouchableOpacity
+                  key={i}
+                  disabled={!d || !canEdit}
+                  onPress={() => d && openDay(d)}
+                  style={styles.cellWrap}
+                  activeOpacity={0.6}>
+                  <View
+                    style={[
+                      styles.cell,
+                      tone && { backgroundColor: tone.bg },
+                      isToday && { borderWidth: 1.5, borderColor: colors.brand },
+                    ]}>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: tone || isToday ? '800' : '500',
+                        color: tone ? tone.fg : d ? colors.ink : 'transparent',
+                      }}>
+                      {d || '0'}
+                    </Text>
+                    {hasItem ? (
+                      <View style={[styles.dot, tone && { backgroundColor: tone.fg }]} />
+                    ) : null}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* legend */}
+          <View style={styles.legend}>
+            {([['holiday', 'Holiday · Sun'], ['exam', 'Exam'], ['event', 'Event']] as const).map(
+              ([kind, label]) => (
+                <View key={kind} style={[styles.legendPill, { backgroundColor: kindColors[kind].bg }]}>
+                  <Text style={{ color: kindColors[kind].fg, fontSize: 10.5, fontWeight: '700' }}>
+                    {label}
+                  </Text>
+                </View>
+              ),
+            )}
+          </View>
+          {canEdit && (
+            <Text style={{ color: colors.subtle, fontSize: 11.5, marginTop: 8, textAlign: 'center' }}>
+              Tap a date to add or edit a holiday.
+            </Text>
+          )}
+        </Card>
+
+        {/* month list */}
+        {monthHolidays.length === 0 && monthEvents.length === 0 && monthExams.length === 0 ? (
+          <Empty icon="🏖️" text={`No holidays or events in ${MONTHS[month]}.`} />
+        ) : (
+          <>
+            {monthHolidays.map(h => (
+              <EventRow key={`h${h.id}`} tone={kindColors.holiday} date={h.date} title={h.name}
+                sub={`${fmtDate(h.date)}${h.description ? ` · ${h.description}` : ''}`} />
+            ))}
+            {monthExams.map(x => (
+              <EventRow key={`x${x.id}`} tone={kindColors.exam} date={x.start_date}
+                title={x.class_name ? `${x.name} (${x.class_name})` : x.name}
+                sub={`${fmtDate(x.start_date)} – ${fmtDate(x.end_date)}`} />
+            ))}
+            {monthEvents.map(e => (
+              <EventRow key={`e${e.id}`} tone={kindColors[e.category === 'exam' ? 'exam' : 'event']}
+                date={e.dates[0]} title={e.title}
+                sub={e.dates.map(d => fmtDate(d)).join(' · ')} />
+            ))}
+          </>
+        )}
+      </Screen>
+
+      <Sheet
+        visible={!!editing}
+        title={editing ? `${editing.holiday ? 'Edit' : 'Add'} holiday — ${fmtDate(editing.date)}` : ''}
+        onClose={() => setEditing(null)}>
+        {editing && (
+          <>
+            <Input label="Holiday name" placeholder="e.g. Diwali" value={form.name} onChangeText={v => setForm({ ...form, name: v })} />
+            <Input label="Description (optional)" value={form.description} onChangeText={v => setForm({ ...form, description: v })} />
+            <Button label={editing.holiday ? 'Save changes' : 'Add holiday'} onPress={save} busy={busy} />
+            {editing.holiday && (
+              <Button label="Delete holiday" kind="danger" onPress={remove} busy={busy} style={{ marginTop: 8 }} />
+            )}
+          </>
+        )}
+      </Sheet>
+    </View>
+  );
+}
+
+/** One row in the month list — colored date pill + title + subtitle. */
+function EventRow({ tone, date, title, sub }: {
+  tone: { bg: string; fg: string };
+  date: string;
+  title: string;
+  sub: string;
+}) {
+  const d = new Date(String(date).slice(0, 10));
+  return (
+    <Card style={styles.holidayRow}>
+      <View style={[styles.datePill, { backgroundColor: tone.bg }]}>
+        <Text style={{ color: tone.fg, fontWeight: '800', fontSize: 15 }}>{d.getDate()}</Text>
+        <Text style={{ color: tone.fg, fontSize: 9.5, fontWeight: '700' }}>
+          {MONTHS[d.getMonth()].slice(0, 3)}
+        </Text>
+      </View>
+      <View style={{ flex: 1, marginLeft: 12 }}>
+        <Text style={{ fontSize: 14.5, fontWeight: '800', color: colors.ink }}>{title}</Text>
+        <Text style={{ fontSize: 12, color: colors.subtle, marginTop: 1 }}>{sub}</Text>
+      </View>
+    </Card>
+  );
+}
+
+const styles = StyleSheet.create({
+  monthHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  monthTitle: { fontSize: 16, fontWeight: '800', color: colors.ink },
+  nav: { fontSize: 26, color: colors.brand, fontWeight: '700', paddingHorizontal: 10 },
+  week: { flexDirection: 'row', marginBottom: 4 },
+  weekDay: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700', color: colors.subtle },
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  cellWrap: { width: '14.285%', padding: 2 },
+  cell: {
+    aspectRatio: 1,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.warn, marginTop: 2 },
+  legend: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 10,
+  },
+  legendPill: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  holidayRow: { flexDirection: 'row', alignItems: 'center' },
+  datePill: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

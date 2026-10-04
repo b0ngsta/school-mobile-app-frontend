@@ -1,0 +1,155 @@
+// My attendance (staff) — today's check-in/out + history. Managers also see
+// who's in today.
+import React, { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { api, photoUrl } from '../../api';
+import {
+  Avatar,
+  Button,
+  Card,
+  Empty,
+  ErrorBox,
+  Loading,
+  Screen,
+  Segments,
+  fmtDate,
+} from '../../components/ui';
+import { MANAGER_ROLES } from '../../roles';
+import { ROLE_LABELS, colors } from '../../theme';
+import type { ScreenProps, StaffAttendanceRecord } from '../../types';
+
+const fmtT = (t?: string | null): string => (t ? String(t).slice(0, 5) : '—');
+
+export default function StaffAttendance({ session }: ScreenProps) {
+  const isManager = MANAGER_ROLES.includes(session.user_type);
+  const [tab, setTab] = useState('mine');
+  const [today, setToday] = useState<StaffAttendanceRecord | null>(null);
+  const [history, setHistory] = useState<StaffAttendanceRecord[] | null>(null);
+  const [allToday, setAllToday] = useState<StaffAttendanceRecord[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async (r = false) => {
+    r && setRefreshing(true);
+    try {
+      setToday(await api('/staff-attendance/today'));
+      if (tab === 'mine') setHistory(await api('/staff-attendance/mine'));
+      else setAllToday(await api('/staff-attendance'));
+      setError(null);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [tab]);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const act = async (path: string) => {
+    setBusy(true);
+    try {
+      await api(path, { method: 'POST' });
+      load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!today && !error) return <Loading />;
+
+  return (
+    <Screen refreshing={refreshing} onRefresh={() => load(true)}>
+      <ErrorBox message={error} />
+
+      {/* today card */}
+      <View style={[styles.today, { backgroundColor: colors.brand }]}>
+        <Text style={styles.todayTitle}>Today · {fmtDate(today?.date)}</Text>
+        <View style={{ flexDirection: 'row', marginTop: 10 }}>
+          <View style={styles.timeBox}>
+            <Text style={styles.timeLbl}>In Time</Text>
+            <Text style={styles.timeVal}>{fmtT(today?.in_time)}</Text>
+          </View>
+          <View style={styles.timeBox}>
+            <Text style={styles.timeLbl}>Out Time</Text>
+            <Text style={styles.timeVal}>{fmtT(today?.out_time)}</Text>
+          </View>
+        </View>
+        <View style={{ flexDirection: 'row', marginTop: 12 }}>
+          {!today?.in_time && (
+            <Button label="✔ Check in" onPress={() => act('/staff-attendance/check-in')} busy={busy}
+              kind="soft" style={{ flex: 1 }} />
+          )}
+          {today?.in_time && !today?.out_time && (
+            <Button label="✔ Check out" onPress={() => act('/staff-attendance/check-out')} busy={busy}
+              kind="soft" style={{ flex: 1 }} />
+          )}
+          {today?.in_time && today?.out_time && (
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>✅ Attendance complete for today</Text>
+          )}
+        </View>
+      </View>
+
+      {isManager && (
+        <Segments
+          items={[
+            { value: 'mine', label: '📅 My history' },
+            { value: 'all', label: '👥 Staff today' },
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
+      )}
+
+      {tab === 'mine' ? (
+        <>
+          {history?.length === 0 && <Empty icon="📅" text="No attendance records yet." />}
+          {history?.map(h => (
+            <Card key={h.id} style={styles.row}>
+              <Text style={{ flex: 1, fontWeight: '700', color: colors.ink, fontSize: 13.5 }}>
+                {fmtDate(h.date)}
+              </Text>
+              <Text style={styles.times}>In {fmtT(h.in_time)}</Text>
+              <Text style={styles.times}>Out {fmtT(h.out_time)}</Text>
+            </Card>
+          ))}
+        </>
+      ) : (
+        <>
+          {allToday?.length === 0 && <Empty icon="👥" text="Nobody has checked in yet today." />}
+          {allToday?.map(a => (
+            <Card key={a.id} style={styles.row}>
+              <Avatar name={a.full_name} uri={photoUrl(a.photo_path)} size={34} />
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={{ fontWeight: '700', color: colors.ink, fontSize: 13.5 }}>{a.full_name}</Text>
+                <Text style={{ color: colors.subtle, fontSize: 11.5 }}>{a.user_type ? ROLE_LABELS[a.user_type] : ''}</Text>
+              </View>
+              <Text style={styles.times}>In {fmtT(a.in_time)}</Text>
+              <Text style={styles.times}>Out {fmtT(a.out_time)}</Text>
+            </Card>
+          ))}
+        </>
+      )}
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  today: { borderRadius: 20, padding: 18, marginBottom: 14 },
+  todayTitle: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  timeBox: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 12,
+    padding: 10,
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  timeLbl: { color: 'rgba(255,255,255,0.8)', fontSize: 11 },
+  timeVal: { color: '#fff', fontSize: 18, fontWeight: '800', marginTop: 2 },
+  row: { flexDirection: 'row', alignItems: 'center' },
+  times: { color: colors.subtle, fontSize: 12, marginLeft: 10, fontWeight: '600' },
+});

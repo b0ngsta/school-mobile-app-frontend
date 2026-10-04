@@ -17,6 +17,7 @@ import {
 } from '../../components/ui';
 import { colors } from '../../theme';
 import type { Assignment, LessonPlan, ScreenProps } from '../../types';
+import { t } from '../../i18n';
 
 interface LessonPlanForm {
   heading: string;
@@ -53,7 +54,7 @@ export default function LessonPlans({ session }: ScreenProps) {
   }, [load, isTeacher]);
 
   const create = async () => {
-    if (!form.heading.trim() || !form.assignment) return setError('Heading and class are required');
+    if (!form.heading.trim() || !form.assignment) return setError(t('Heading and class are required'));
     setBusy(true);
     try {
       const fd = new FormData();
@@ -80,7 +81,7 @@ export default function LessonPlans({ session }: ScreenProps) {
     <View style={{ flex: 1 }}>
       <Screen refreshing={refreshing} onRefresh={() => load(true)}>
         <ErrorBox message={error} />
-        {items?.length === 0 && <Empty icon="📚" text="No lesson plans yet." />}
+        {items?.length === 0 && <Empty icon="📚" text={t('No lesson plans yet.')} />}
         {items?.map(p => (
           <Card key={p.id}>
             <Text style={styles.heading}>{p.heading}</Text>
@@ -94,7 +95,7 @@ export default function LessonPlans({ session }: ScreenProps) {
             {p.final_remark ? <Text style={[styles.sub, { marginTop: 4 }]}>{p.final_remark}</Text> : null}
             {p.files?.length ? (
               <Text style={[styles.sub, { marginTop: 4, color: colors.brand, fontWeight: '700' }]}>
-                📎 {p.files.length} file{p.files.length > 1 ? 's' : ''} attached
+                📎 {p.files.length > 1 ? t('{n} files attached', { n: p.files.length }) : t('{n} file attached', { n: p.files.length })}
               </Text>
             ) : null}
           </Card>
@@ -102,9 +103,9 @@ export default function LessonPlans({ session }: ScreenProps) {
       </Screen>
       {isTeacher && <Fab onPress={() => setCreating(true)} />}
 
-      <Sheet visible={creating} title="Add lesson plan" onClose={() => setCreating(false)}>
-        <Input label="Topic / Heading" placeholder="e.g. Photosynthesis — The Process" value={form.heading} onChangeText={v => setForm({ ...form, heading: v })} />
-        <Text style={{ fontSize: 13, fontWeight: '600', color: colors.ink, marginBottom: 6 }}>Class</Text>
+      <Sheet visible={creating} title={t('Add lesson plan')} onClose={() => setCreating(false)}>
+        <Input label={t('Topic / Heading')} placeholder={t('e.g. Photosynthesis — The Process')} value={form.heading} onChangeText={v => setForm({ ...form, heading: v })} />
+        <Text style={{ fontSize: 13, fontWeight: '600', color: colors.ink, marginBottom: 6 }}>{t('Class')}</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 4 }}>
           {assignments.map(a => (
             <Chip
@@ -115,12 +116,12 @@ export default function LessonPlans({ session }: ScreenProps) {
             />
           ))}
         </View>
-        <Input label="From (YYYY-MM-DD)" placeholder="2026-07-14" value={form.duration_start} onChangeText={v => setForm({ ...form, duration_start: v })} />
-        <Input label="To (YYYY-MM-DD)" placeholder="2026-07-18" value={form.duration_end} onChangeText={v => setForm({ ...form, duration_end: v })} />
-        <Input label="Objective / remark" multiline style={{ minHeight: 70, textAlignVertical: 'top' }} value={form.final_remark} onChangeText={v => setForm({ ...form, final_remark: v })} />
-        <Button label="Save lesson plan" onPress={create} busy={busy} />
+        <Input label={t('From (YYYY-MM-DD)')} placeholder="2026-07-14" value={form.duration_start} onChangeText={v => setForm({ ...form, duration_start: v })} />
+        <Input label={t('To (YYYY-MM-DD)')} placeholder="2026-07-18" value={form.duration_end} onChangeText={v => setForm({ ...form, duration_end: v })} />
+        <Input label={t('Objective / remark')} multiline style={{ minHeight: 70, textAlignVertical: 'top' }} value={form.final_remark} onChangeText={v => setForm({ ...form, final_remark: v })} />
+        <Button label={t('Save lesson plan')} onPress={create} busy={busy} />
         <Text style={{ color: colors.subtle, fontSize: 11.5, marginTop: 8, textAlign: 'center' }}>
-          Tip: attach files from the web app.
+          {t('Tip: attach files from the web app.')}
         </Text>
       </Sheet>
     </View>

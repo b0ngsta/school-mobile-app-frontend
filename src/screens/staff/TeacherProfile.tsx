@@ -8,6 +8,7 @@ import { Avatar, Badge, Card, Screen, Segments, fmtDate } from '../../components
 import { MANAGER_ROLES } from '../../roles';
 import { colors, shadow } from '../../theme';
 import type { Assignment, ScreenProps, StaffUser } from '../../types';
+import { t } from '../../i18n';
 
 function Detail({ label, value, last }: { label: string; value?: string | null; last?: boolean }) {
   return (
@@ -38,16 +39,16 @@ export default function TeacherProfile({ params, session }: ScreenProps) {
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={styles.name}>{teacher.full_name}</Text>
           <Text style={styles.sub}>
-            Designation: <Text style={{ color: colors.brand, fontWeight: '800' }}>Teacher</Text>
+            {t('Designation:')} <Text style={{ color: colors.brand, fontWeight: '800' }}>{t('Teacher')}</Text>
           </Text>
-          <Text style={styles.sub}>EMP ID: {teacher.id}{teacher.subject ? ` · 📘 ${teacher.subject}` : ''}</Text>
+          <Text style={styles.sub}>{t('EMP ID:')} {teacher.id}{teacher.subject ? ` · 📘 ${teacher.subject}` : ''}</Text>
         </View>
       </View>
 
       <Segments
         items={[
-          { value: 'details', label: '👤 Details' },
-          { value: 'timetable', label: '🕐 Timetable' },
+          { value: 'details', label: `👤 ${t('Details')}` },
+          { value: 'timetable', label: `🕐 ${t('Timetable')}` },
         ]}
         value={tab}
         onChange={setTab}
@@ -56,27 +57,27 @@ export default function TeacherProfile({ params, session }: ScreenProps) {
       {tab === 'details' && (
         <>
           <Card>
-            <Detail label="Username" value={teacher.username} />
-            <Detail label="Email" value={teacher.email} />
-            <Detail label="Phone" value={teacher.phone} />
-            <Detail label="Subject" value={teacher.subject} />
-            <Detail label="Qualification" value={teacher.qualification} />
-            <Detail label="Joining date" value={teacher.joining_date ? fmtDate(teacher.joining_date) : null} />
-            <Detail label="Address" value={teacher.address} last />
+            <Detail label={t('Username')} value={teacher.username} />
+            <Detail label={t('Email')} value={teacher.email} />
+            <Detail label={t('Phone')} value={teacher.phone} />
+            <Detail label={t('Subject')} value={teacher.subject} />
+            <Detail label={t('Qualification')} value={teacher.qualification} />
+            <Detail label={t('Joining date')} value={teacher.joining_date ? fmtDate(teacher.joining_date) : null} />
+            <Detail label={t('Address')} value={teacher.address} last />
           </Card>
           <Card>
-            <Text style={styles.sectionTitle}>Class assignments</Text>
+            <Text style={styles.sectionTitle}>{t('Class assignments')}</Text>
             {assignments.length === 0 && (
-              <Text style={{ color: colors.subtle, fontSize: 12.5 }}>No class assignments yet.</Text>
+              <Text style={{ color: colors.subtle, fontSize: 12.5 }}>{t('No class assignments yet.')}</Text>
             )}
             {assignments.map(a => (
               <View key={a.id} style={styles.assignRow}>
                 <Text style={{ flex: 1, color: colors.ink, fontWeight: '600', fontSize: 13.5 }}>
-                  {a.class_name} — Section {a.section_name}
+                  {a.class_name} — {t('Section {name}', { name: a.section_name })}
                 </Text>
                 <Badge
                   status={a.role}
-                  label={a.role === 'class_teacher' ? 'Class teacher' : a.subject || 'Subject'}
+                  label={a.role === 'class_teacher' ? t('Class teacher') : a.subject || t('Subject')}
                 />
               </View>
             ))}
@@ -88,7 +89,7 @@ export default function TeacherProfile({ params, session }: ScreenProps) {
         <>
           {canEdit && (
             <Text style={{ color: colors.subtle, fontSize: 12, marginBottom: 8 }}>
-              Tap any period to assign a class, section and subject — e.g. Monday · P2 → Class 2-B.
+              {t('Tap any period to assign a class, section and subject — e.g. Monday · P2 → Class 2-B.')}
             </Text>
           )}
           <TimetableEditor teacherId={teacher.id} canEdit={canEdit} />

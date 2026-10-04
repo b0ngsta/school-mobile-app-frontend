@@ -21,6 +21,7 @@ import {
 import { MANAGER_ROLES } from '../../roles';
 import { ROLE_LABELS, colors } from '../../theme';
 import type { SalaryRecord, ScreenProps, StaffUser } from '../../types';
+import { t } from '../../i18n';
 
 interface SalaryForm {
   userId: number | null;
@@ -68,7 +69,7 @@ export default function Salary({ session }: ScreenProps) {
   }, [load, isManager]);
 
   const save = async () => {
-    if (!form.userId || !form.amount) return setError('Pick a staff member and enter the amount');
+    if (!form.userId || !form.amount) return setError(t('Pick a staff member and enter the amount'));
     setBusy(true);
     try {
       await api('/salaries', {
@@ -100,25 +101,25 @@ export default function Salary({ session }: ScreenProps) {
         {isManager && (
           <Segments
             items={[
-              { value: 'mine', label: '💵 My salary' },
-              { value: 'all', label: '👥 All staff' },
+              { value: 'mine', label: `💵 ${t('My salary')}` },
+              { value: 'all', label: `👥 ${t('All staff')}` },
             ]}
             value={tab}
             onChange={setTab}
           />
         )}
-        {items?.length === 0 && <Empty icon="💵" text="No salary statements yet." />}
+        {items?.length === 0 && <Empty icon="💵" text={t('No salary statements yet.')} />}
         {items?.map(s => (
           <Card key={s.id}>
             <View style={styles.head}>
               <Text style={styles.month}>
-                {MONTHS[s.month - 1]} {s.year}
+                {t('months')[s.month - 1]} {s.year}
                 {tab === 'all' ? ` — ${s.full_name}` : ''}
               </Text>
               <Badge status={s.status} />
             </View>
             {tab === 'all' && (
-              <Text style={styles.sub}>{s.user_type ? ROLE_LABELS[s.user_type] : ''}</Text>
+              <Text style={styles.sub}>{s.user_type ? t(ROLE_LABELS[s.user_type]) : ''}</Text>
             )}
             <Text style={styles.amount}>{inr(s.amount)}</Text>
             {s.note ? <Text style={styles.sub}>{s.note}</Text> : null}
@@ -127,8 +128,8 @@ export default function Salary({ session }: ScreenProps) {
       </Screen>
       {isManager && <Fab icon="💵" onPress={() => setAdding(true)} />}
 
-      <Sheet visible={adding} title="Record salary" onClose={() => setAdding(false)}>
-        <Text style={styles.label}>Staff member</Text>
+      <Sheet visible={adding} title={t('Record salary')} onClose={() => setAdding(false)}>
+        <Text style={styles.label}>{t('Staff member')}</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 4 }}>
           {staffList.map(u => (
             <Chip
@@ -139,16 +140,16 @@ export default function Salary({ session }: ScreenProps) {
             />
           ))}
         </View>
-        <Text style={styles.label}>Month</Text>
+        <Text style={styles.label}>{t('Month')}</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 4 }}>
           {MONTHS.map((m, i) => (
-            <Chip key={m} label={m} active={form.month === i + 1} onPress={() => setForm({ ...form, month: i + 1 })} />
+            <Chip key={m} label={t('months')[i]} active={form.month === i + 1} onPress={() => setForm({ ...form, month: i + 1 })} />
           ))}
         </View>
-        <Input label="Year" keyboardType="numeric" value={form.year} onChangeText={v => setForm({ ...form, year: v })} />
-        <Input label="Amount (₹)" keyboardType="numeric" value={form.amount} onChangeText={v => setForm({ ...form, amount: v })} />
-        <Input label="Note (optional)" value={form.note} onChangeText={v => setForm({ ...form, note: v })} />
-        <Button label="Save salary record" onPress={save} busy={busy} />
+        <Input label={t('Year')} keyboardType="numeric" value={form.year} onChangeText={v => setForm({ ...form, year: v })} />
+        <Input label={t('Amount (₹)')} keyboardType="numeric" value={form.amount} onChangeText={v => setForm({ ...form, amount: v })} />
+        <Input label={t('Note (optional)')} value={form.note} onChangeText={v => setForm({ ...form, note: v })} />
+        <Button label={t('Save salary record')} onPress={save} busy={busy} />
       </Sheet>
     </View>
   );

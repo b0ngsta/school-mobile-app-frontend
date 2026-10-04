@@ -6,6 +6,7 @@ import { api, photoUrl } from '../../api';
 import { Avatar, Card, Empty, ErrorBox, Loading, Screen } from '../../components/ui';
 import { colors } from '../../theme';
 import type { ScreenProps, StaffUser } from '../../types';
+import { t } from '../../i18n';
 
 export default function Teachers({ navigate, params }: ScreenProps) {
   const [items, setItems] = useState<StaffUser[] | null>(null);
@@ -32,23 +33,23 @@ export default function Teachers({ navigate, params }: ScreenProps) {
   return (
     <Screen refreshing={refreshing} onRefresh={() => load(true)}>
       <ErrorBox message={error} />
-      {items?.length === 0 && <Empty icon="🧑‍🏫" text="No teachers yet — add them in Staff Users." />}
-      {items?.map(t => (
+      {items?.length === 0 && <Empty icon="🧑‍🏫" text={t('No teachers yet — add them in Staff Users.')} />}
+      {items?.map(tc => (
         <TouchableOpacity
-          key={t.id}
+          key={tc.id}
           activeOpacity={0.7}
           onPress={() =>
-            navigate('TeacherProfile', { teacher: t, title: t.full_name, hint: params?.hint })
+            navigate('TeacherProfile', { teacher: tc, title: tc.full_name, hint: params?.hint })
           }>
           <Card style={styles.row}>
-            <Avatar name={t.full_name} uri={photoUrl(t.photo_path)} size={48} />
+            <Avatar name={tc.full_name} uri={photoUrl(tc.photo_path)} size={48} />
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.name}>{t.full_name}</Text>
+              <Text style={styles.name}>{tc.full_name}</Text>
               <Text style={styles.sub}>
-                {t.subject ? `📘 ${t.subject}` : 'Teacher'}
-                {t.phone ? ` · 📞 ${t.phone}` : ''}
+                {tc.subject ? `📘 ${tc.subject}` : t('Teacher')}
+                {tc.phone ? ` · 📞 ${tc.phone}` : ''}
               </Text>
-              <Text style={styles.sub}>📚 {t.lesson_plan_count} lesson plans</Text>
+              <Text style={styles.sub}>📚 {t('{n} lesson plans', { n: tc.lesson_plan_count })}</Text>
             </View>
             <Text style={{ color: colors.subtle, fontSize: 22 }}>›</Text>
           </Card>

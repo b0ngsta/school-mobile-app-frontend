@@ -18,6 +18,7 @@ import {
 } from '../../components/ui';
 import { colors } from '../../theme';
 import type { SmsLog } from '../../types';
+import { t } from '../../i18n';
 
 const GROUPS = [
   { value: 'all_parents', label: 'All Parents' },
@@ -50,7 +51,7 @@ export default function BulkSMS() {
   }, [load]);
 
   const send = async () => {
-    if (!message.trim()) return setError('Message is required');
+    if (!message.trim()) return setError(t('Message is required'));
     setBusy(true);
     try {
       await api('/sms', { method: 'POST', body: { recipient_group: group, message: message.trim() } });
@@ -70,7 +71,7 @@ export default function BulkSMS() {
     <View style={{ flex: 1 }}>
       <Screen refreshing={refreshing} onRefresh={() => load(true)}>
         <ErrorBox message={error} />
-        {items?.length === 0 && <Empty icon="💬" text="No SMS sent yet." />}
+        {items?.length === 0 && <Empty icon="💬" text={t('No SMS sent yet.')} />}
         {items?.map(m => (
           <Card key={m.id}>
             <View style={styles.head}>
@@ -78,28 +79,28 @@ export default function BulkSMS() {
               <Badge status={m.status === 'sent' ? 'completed' : 'failed'} label={m.status} />
             </View>
             <Text style={styles.msg}>{m.message}</Text>
-            <Text style={styles.sub}>👥 {m.recipients_count} recipients · {fmtDate(m.created_at)}</Text>
+            <Text style={styles.sub}>👥 {t('{n} recipients', { n: m.recipients_count })} · {fmtDate(m.created_at)}</Text>
           </Card>
         ))}
       </Screen>
       <Fab icon="✉️" onPress={() => setComposing(true)} />
 
-      <Sheet visible={composing} title="Send bulk SMS" onClose={() => setComposing(false)}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: colors.ink, marginBottom: 6 }}>Recipients</Text>
+      <Sheet visible={composing} title={t('Send bulk SMS')} onClose={() => setComposing(false)}>
+        <Text style={{ fontSize: 13, fontWeight: '600', color: colors.ink, marginBottom: 6 }}>{t('Recipients')}</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 4 }}>
           {GROUPS.map(g => (
-            <Chip key={g.value} label={g.label} active={group === g.value} onPress={() => setGroup(g.value)} />
+            <Chip key={g.value} label={t(g.label)} active={group === g.value} onPress={() => setGroup(g.value)} />
           ))}
         </View>
         <Input
-          label="Message"
+          label={t('Message')}
           multiline
           style={{ minHeight: 90, textAlignVertical: 'top' }}
           value={message}
           onChangeText={setMessage}
           maxLength={1000}
         />
-        <Button label="Send SMS" onPress={send} busy={busy} />
+        <Button label={t('Send SMS')} onPress={send} busy={busy} />
       </Sheet>
     </View>
   );

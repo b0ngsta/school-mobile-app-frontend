@@ -20,6 +20,7 @@ import {
 } from '../../components/ui';
 import { colors } from '../../theme';
 import type { FeeClaim } from '../../types';
+import { t } from '../../i18n';
 
 export default function FeeClaims() {
   const [items, setItems] = useState<FeeClaim[] | null>(null);
@@ -71,15 +72,15 @@ export default function FeeClaims() {
         <ErrorBox message={error} />
         <Segments
           items={[
-            { value: 'pending', label: 'Pending' },
-            { value: 'approved', label: 'Approved' },
-            { value: 'rejected', label: 'Rejected' },
-            { value: '', label: 'All' },
+            { value: 'pending', label: t('Pending') },
+            { value: 'approved', label: t('Approved') },
+            { value: 'rejected', label: t('Rejected') },
+            { value: '', label: t('All') },
           ]}
           value={filter}
           onChange={setFilter}
         />
-        {items?.length === 0 && <Empty icon="🧾" text={`No ${filter || ''} claims.`} />}
+        {items?.length === 0 && <Empty icon="🧾" text={filter ? t(`No ${filter} claims.`) : t('No claims.')} />}
         {items?.map(c => (
           <Card key={c.id}>
             <View style={styles.head}>
@@ -101,11 +102,11 @@ export default function FeeClaims() {
             {c.note ? <Text style={[styles.sub, { marginTop: 4 }]}>💬 {c.note}</Text> : null}
             {c.reviewed_by_name ? (
               <Text style={[styles.sub, { marginTop: 4 }]}>
-                Reviewed by {c.reviewed_by_name}{c.review_note ? ` — ${c.review_note}` : ''}
+                {t('Reviewed by {name}', { name: c.reviewed_by_name })}{c.review_note ? ` — ${c.review_note}` : ''}
               </Text>
             ) : null}
             <Button
-              label={c.status === 'pending' ? '🖼️ View proof & review' : '🖼️ View proof'}
+              label={c.status === 'pending' ? `🖼️ ${t('View proof & review')}` : `🖼️ ${t('View proof')}`}
               kind="soft"
               small
               onPress={() => { setReviewing(c); setNote('') }}
@@ -129,17 +130,17 @@ export default function FeeClaims() {
             {reviewing.status === 'pending' ? (
               <>
                 <Input
-                  label="Review note (optional)"
-                  placeholder="e.g. Verified against bank statement"
+                  label={t('Review note (optional)')}
+                  placeholder={t('e.g. Verified against bank statement')}
                   value={note}
                   onChangeText={setNote}
                 />
                 <View style={{ flexDirection: 'row' }}>
-                  <Button label="✅ Approve" onPress={() => review('approve')} busy={busy} style={{ flex: 1, marginRight: 8 }} />
-                  <Button label="✕ Reject" kind="danger" onPress={() => review('reject')} busy={busy} style={{ flex: 1 }} />
+                  <Button label={t('✅ Approve')} onPress={() => review('approve')} busy={busy} style={{ flex: 1, marginRight: 8 }} />
+                  <Button label={t('✕ Reject')} kind="danger" onPress={() => review('reject')} busy={busy} style={{ flex: 1 }} />
                 </View>
                 <Text style={{ color: colors.subtle, fontSize: 11.5, marginTop: 8, textAlign: 'center' }}>
-                  Approving marks the fee as paid and records a transaction.
+                  {t('Approving marks the fee as paid and records a transaction.')}
                 </Text>
               </>
             ) : (

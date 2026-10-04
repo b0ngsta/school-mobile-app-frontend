@@ -16,6 +16,7 @@ import {
 } from '../../components/ui';
 import { colors } from '../../theme';
 import type { Notice, ScreenProps } from '../../types';
+import { t } from '../../i18n';
 
 export default function StaffNotices({ session }: ScreenProps) {
   const canPost = ['admin', 'principal'].includes(session.user_type);
@@ -43,7 +44,7 @@ export default function StaffNotices({ session }: ScreenProps) {
   }, [load]);
 
   const post = async () => {
-    if (!title.trim() || !body.trim()) return setError('Title and body are required');
+    if (!title.trim() || !body.trim()) return setError(t('Title and body are required'));
     setBusy(true);
     try {
       await api('/notices', { method: 'POST', body: { title: title.trim(), body: body.trim() } });
@@ -73,30 +74,30 @@ export default function StaffNotices({ session }: ScreenProps) {
     <View style={{ flex: 1 }}>
       <Screen refreshing={refreshing} onRefresh={() => load(true)}>
         <ErrorBox message={error} />
-        {items?.length === 0 && <Empty icon="📢" text="No notices yet." />}
+        {items?.length === 0 && <Empty icon="📢" text={t('No notices yet.')} />}
         {items?.map(n => (
           <Card key={n.id}>
             <Text style={styles.title}>{n.title}</Text>
             <Text style={styles.body}>{n.body}</Text>
             <View style={styles.footer}>
               <Text style={styles.sub}>{n.posted_by} · {fmtDate(n.created_at)}</Text>
-              {canPost && <Button label="Delete" kind="danger" small onPress={() => remove(n.id)} />}
+              {canPost && <Button label={t('Delete')} kind="danger" small onPress={() => remove(n.id)} />}
             </View>
           </Card>
         ))}
       </Screen>
       {canPost && <Fab icon="📢" onPress={() => setComposing(true)} />}
 
-      <Sheet visible={composing} title="Post notice" onClose={() => setComposing(false)}>
-        <Input label="Title" value={title} onChangeText={setTitle} />
+      <Sheet visible={composing} title={t('Post notice')} onClose={() => setComposing(false)}>
+        <Input label={t('Title')} value={title} onChangeText={setTitle} />
         <Input
-          label="Body"
+          label={t('Body')}
           multiline
           style={{ minHeight: 100, textAlignVertical: 'top' }}
           value={body}
           onChangeText={setBody}
         />
-        <Button label="Post notice" onPress={post} busy={busy} />
+        <Button label={t('Post notice')} onPress={post} busy={busy} />
       </Sheet>
     </View>
   );

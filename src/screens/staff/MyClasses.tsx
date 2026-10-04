@@ -5,6 +5,7 @@ import { api } from '../../api';
 import { Badge, Card, Empty, ErrorBox, Loading, Screen } from '../../components/ui';
 import { colors } from '../../theme';
 import type { Assignment, ScreenProps } from '../../types';
+import { t } from '../../i18n';
 
 export default function MyClasses({ navigate }: ScreenProps) {
   const [items, setItems] = useState<Assignment[] | null>(null);
@@ -31,7 +32,7 @@ export default function MyClasses({ navigate }: ScreenProps) {
   return (
     <Screen refreshing={refreshing} onRefresh={() => load(true)}>
       <ErrorBox message={error} />
-      {items?.length === 0 && <Empty icon="🏫" text="No classes assigned to you yet." />}
+      {items?.length === 0 && <Empty icon="🏫" text={t('No classes assigned to you yet.')} />}
       {items?.map(a => (
         <TouchableOpacity
           key={a.id}
@@ -48,14 +49,14 @@ export default function MyClasses({ navigate }: ScreenProps) {
           }>
           <Card>
             <View style={styles.head}>
-              <Text style={styles.name}>{a.class_name} — Section {a.section_name}</Text>
-              <Badge status={a.role} label={a.role === 'class_teacher' ? 'Class teacher' : a.subject || 'Subject'} />
+              <Text style={styles.name}>{a.class_name} — {t('Section {name}', { name: a.section_name })}</Text>
+              <Badge status={a.role} label={a.role === 'class_teacher' ? t('Class teacher') : a.subject || t('Subject')} />
             </View>
             <Text style={styles.sub}>
-              🧑‍🎓 {a.student_count} students{a.subject ? ` · 📘 ${a.subject}` : ''}
+              🧑‍🎓 {t('{n} students', { n: a.student_count })}{a.subject ? ` · 📘 ${a.subject}` : ''}
             </Text>
             <View style={styles.actions}>
-              <Text style={[styles.link, { color: colors.brand }]}>View students ›</Text>
+              <Text style={[styles.link, { color: colors.brand }]}>{t('View students ›')}</Text>
             </View>
           </Card>
         </TouchableOpacity>

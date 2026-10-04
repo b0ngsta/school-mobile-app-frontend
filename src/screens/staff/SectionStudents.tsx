@@ -18,6 +18,7 @@ import {
 import { MANAGER_ROLES } from '../../roles';
 import { colors } from '../../theme';
 import type { ScreenProps, StudentListItem } from '../../types';
+import { t } from '../../i18n';
 
 export default function SectionStudents({ navigate, params, session }: ScreenProps) {
   const { classId, sectionId, className, sectionName, canEdit } = params || {};
@@ -46,7 +47,7 @@ export default function SectionStudents({ navigate, params, session }: ScreenPro
 
   const addStudent = async () => {
     if (!form.full_name.trim() || !form.username.trim() || form.password.length < 6) {
-      return setError('Name, username and a 6+ char password are required');
+      return setError(t('Name, username and a 6+ char password are required'));
     }
     setBusy(true);
     try {
@@ -79,12 +80,12 @@ export default function SectionStudents({ navigate, params, session }: ScreenPro
         <ErrorBox message={error} />
 
         <View style={[styles.hero, { backgroundColor: colors.brand }]}>
-          <Text style={styles.heroTitle}>{className} — Section {sectionName}</Text>
-          <Text style={styles.heroSub}>{items?.length ?? 0} students</Text>
+          <Text style={styles.heroTitle}>{className} — {t('Section {name}', { name: sectionName })}</Text>
+          <Text style={styles.heroSub}>{t('{n} students', { n: items?.length ?? 0 })}</Text>
         </View>
 
         <Button
-          label="✅ Mark today's attendance"
+          label={t("✅ Mark today's attendance")}
           kind="soft"
           onPress={() =>
             navigate('MarkAttendance', { classId, sectionId, className, sectionName })
@@ -92,7 +93,7 @@ export default function SectionStudents({ navigate, params, session }: ScreenPro
           style={{ marginBottom: 12 }}
         />
 
-        {items?.length === 0 && <Empty icon="🧑‍🎓" text="No students in this section yet." />}
+        {items?.length === 0 && <Empty icon="🧑‍🎓" text={t('No students in this section yet.')} />}
         {items?.map(s => (
           <TouchableOpacity
             key={s.id}
@@ -102,7 +103,7 @@ export default function SectionStudents({ navigate, params, session }: ScreenPro
               <Avatar name={s.full_name} uri={photoUrl(s.photo_path)} size={42} />
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={styles.name}>{s.full_name}</Text>
-                <Text style={styles.sub}>Roll No. {s.roll_no || '—'}</Text>
+                <Text style={styles.sub}>{t('Roll No.')} {s.roll_no || '—'}</Text>
               </View>
               <Text style={{ color: colors.subtle, fontSize: 22 }}>›</Text>
             </Card>
@@ -111,12 +112,12 @@ export default function SectionStudents({ navigate, params, session }: ScreenPro
       </Screen>
       {mayEdit && <Fab onPress={() => setAdding(true)} />}
 
-      <Sheet visible={adding} title="Add student" onClose={() => setAdding(false)}>
-        <Input label="Full name" value={form.full_name} onChangeText={v => setForm({ ...form, full_name: v })} />
-        <Input label="Username" autoCapitalize="none" value={form.username} onChangeText={v => setForm({ ...form, username: v })} />
-        <Input label="Password (min 6 chars)" secureTextEntry value={form.password} onChangeText={v => setForm({ ...form, password: v })} />
-        <Input label="Roll no." keyboardType="numeric" value={form.roll_no} onChangeText={v => setForm({ ...form, roll_no: v })} />
-        <Button label="Add student" onPress={addStudent} busy={busy} />
+      <Sheet visible={adding} title={t('Add student')} onClose={() => setAdding(false)}>
+        <Input label={t('Full name')} value={form.full_name} onChangeText={v => setForm({ ...form, full_name: v })} />
+        <Input label={t('Username')} autoCapitalize="none" value={form.username} onChangeText={v => setForm({ ...form, username: v })} />
+        <Input label={t('Password (min 6 chars)')} secureTextEntry value={form.password} onChangeText={v => setForm({ ...form, password: v })} />
+        <Input label={t('Roll no.')} keyboardType="numeric" value={form.roll_no} onChangeText={v => setForm({ ...form, roll_no: v })} />
+        <Button label={t('Add student')} onPress={addStudent} busy={busy} />
       </Sheet>
     </View>
   );

@@ -18,6 +18,7 @@ import {
 import { ROLE_LABELS, colors, shadow } from '../../theme';
 import type { AttendanceStats, AuthUser, DashboardStats, FeeStats, Notice, ScreenProps, StaffAttendanceRecord, TransactionStats } from '../../types';
 import type { GridItem } from '../../components/ui';
+import { t } from '../../i18n';
 
 const fmtT = (t?: string | null): string => (t ? String(t).slice(0, 5) : '—');
 
@@ -124,7 +125,7 @@ export default function HomeStaff({ navigate, session }: ScreenProps) {
 
   if (loading) return <Loading />;
 
-  const attLabel = !today?.in_time ? '✔ Check in' : !today?.out_time ? '✔ Check out' : '✅ Done for today';
+  const attLabel = !today?.in_time ? `✔ ${t('Check in')}` : !today?.out_time ? `✔ ${t('Check out')}` : `✅ ${t('Done for today')}`;
   const attDisabled = busyAtt || !!(today?.in_time && today?.out_time);
 
   return (
@@ -137,19 +138,19 @@ export default function HomeStaff({ navigate, session }: ScreenProps) {
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={styles.idName}>{session.full_name}</Text>
           <Text style={styles.idSub}>
-            Designation: <Text style={{ color: colors.brand, fontWeight: '800' }}>{ROLE_LABELS[role] || role}</Text>
+            {t('Designation:')} <Text style={{ color: colors.brand, fontWeight: '800' }}>{t(ROLE_LABELS[role] || role)}</Text>
           </Text>
-          <Text style={styles.idSub}>EMP ID: {session.user_id}</Text>
+          <Text style={styles.idSub}>{t('EMP ID:')} {session.user_id}</Text>
         </View>
         <View style={styles.attBox}>
-          <Text style={styles.attTitle}>Today Attendance</Text>
+          <Text style={styles.attTitle}>{t('Today Attendance')}</Text>
           <View style={{ flexDirection: 'row' }}>
             <View style={styles.attCell}>
-              <Text style={styles.attLbl}>In Time</Text>
+              <Text style={styles.attLbl}>{t('In Time')}</Text>
               <Text style={styles.attVal}>{fmtT(today?.in_time)}</Text>
             </View>
             <View style={styles.attCell}>
-              <Text style={styles.attLbl}>Out Time</Text>
+              <Text style={styles.attLbl}>{t('Out Time')}</Text>
               <Text style={styles.attVal}>{fmtT(today?.out_time)}</Text>
             </View>
           </View>
@@ -168,18 +169,18 @@ export default function HomeStaff({ navigate, session }: ScreenProps) {
       {isTopManager && (
         <>
           <View style={styles.tileRow}>
-            <MiniStat label="Total Fees" value={feeStats ? inr(feeStats.total) : '—'} accent={colors.brand} />
-            <MiniStat label="Due Fees" value={feeStats ? inr(feeStats.pending + feeStats.overdue) : '—'} tint={colors.danger} accent={colors.danger} />
+            <MiniStat label={t('Total Fees')} value={feeStats ? inr(feeStats.total) : '—'} accent={colors.brand} />
+            <MiniStat label={t('Due Fees')} value={feeStats ? inr(feeStats.pending + feeStats.overdue) : '—'} tint={colors.danger} accent={colors.danger} />
           </View>
           <View style={styles.tileRow}>
-            <MiniStat label="Fees Paid" value={feeStats ? inr(feeStats.collected) : '—'} tint={colors.ok} accent={colors.ok} />
-            <MiniStat label="Today Paid" value={payStats ? inr(payStats.today_collection) : '—'} tint={colors.warn} accent={colors.warn} />
+            <MiniStat label={t('Fees Paid')} value={feeStats ? inr(feeStats.collected) : '—'} tint={colors.ok} accent={colors.ok} />
+            <MiniStat label={t('Today Paid')} value={payStats ? inr(payStats.today_collection) : '—'} tint={colors.warn} accent={colors.warn} />
           </View>
           <View style={[styles.tileRow, { marginBottom: 14 }]}>
-            <MiniStat label="Total Students" value={dashStats?.students} tint={colors.brand} accent={colors.brand} />
-            <MiniStat label="Total Teachers" value={dashStats?.teachers} tint={colors.info} accent={colors.info} />
+            <MiniStat label={t('Total Students')} value={dashStats?.students} tint={colors.brand} accent={colors.brand} />
+            <MiniStat label={t('Total Teachers')} value={dashStats?.teachers} tint={colors.info} accent={colors.info} />
             <MiniStat
-              label="Present Today"
+              label={t('Present Today')}
               value={attStats ? `${attStats.present}/${attStats.marked}` : '—'}
               tint={colors.ok}
               accent={colors.ok}

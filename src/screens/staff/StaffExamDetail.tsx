@@ -17,6 +17,7 @@ import {
 import { MANAGER_ROLES } from '../../roles';
 import { colors } from '../../theme';
 import type { AdminExam, ScreenProps } from '../../types';
+import { t } from '../../i18n';
 
 export default function StaffExamDetail({ navigate, params, session }: ScreenProps) {
   const { examId } = params || {};
@@ -67,21 +68,21 @@ export default function StaffExamDetail({ navigate, params, session }: ScreenPro
           <View style={[styles.hero, { backgroundColor: colors.brand }]}>
             <Text style={styles.heroTitle}>{exam.name}</Text>
             <Text style={styles.heroSub}>
-              {exam.class_name || 'All classes'} · {fmtDate(exam.start_date)} – {fmtDate(exam.end_date)}
+              {exam.class_name || t('All classes')} · {fmtDate(exam.start_date)} – {fmtDate(exam.end_date)}
             </Text>
             <View style={{ flexDirection: 'row', marginTop: 10 }}>
               <Badge status={exam.status} />
               <View style={{ width: 8 }} />
               <Badge
                 status={exam.results_published ? 'completed' : 'pending'}
-                label={exam.results_published ? 'Results published' : 'Results not published'}
+                label={exam.results_published ? t('Results published') : t('Results not published')}
               />
             </View>
           </View>
 
           {isManager && (
             <Button
-              label={exam.results_published ? 'Unpublish results' : '📢 Publish results'}
+              label={exam.results_published ? t('Unpublish results') : `📢 ${t('Publish results')}`}
               kind="soft"
               onPress={togglePublish}
               busy={busy}
@@ -89,8 +90,8 @@ export default function StaffExamDetail({ navigate, params, session }: ScreenPro
             />
           )}
 
-          <SectionTitle>Classes — tap to manage subject papers</SectionTitle>
-          {exam.classes?.length === 0 && <Empty icon="🏫" text="No classes yet." />}
+          <SectionTitle>{t('Classes — tap to manage subject papers')}</SectionTitle>
+          {exam.classes?.length === 0 && <Empty icon="🏫" text={t('No classes yet.')} />}
           {exam.classes?.map(c => {
             const done = c.subject_count > 0 && c.paper_count >= c.subject_count;
             return (
@@ -112,7 +113,7 @@ export default function StaffExamDetail({ navigate, params, session }: ScreenPro
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={styles.className}>{c.name}</Text>
                     <Text style={styles.classSub}>
-                      🧑‍🎓 {c.student_count} students · 📘 {c.subject_count} subjects
+                      🧑‍🎓 {t('{n} students', { n: c.student_count })} · 📘 {t('{n} subjects', { n: c.subject_count })}
                     </Text>
                   </View>
                   <View style={[styles.paperPill, { backgroundColor: done ? colors.okSoft : colors.warnSoft }]}>

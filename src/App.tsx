@@ -78,7 +78,7 @@ export default function App() {
   const ActiveScreen = screen.component;
   const atHome = stack.length === 0;
   const title =
-    top.params?.title || (screen.titleKey ? t(screen.titleKey) : screen.title || 'EduManage');
+    top.params?.title || (screen.titleKey ? t(screen.titleKey) : screen.title ? t(screen.title) : 'EduManage');
   const noticeRoute: RouteName = session.user_type === 'student' ? 'Notices' : 'StaffNotices';
 
   return (

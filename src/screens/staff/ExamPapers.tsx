@@ -15,6 +15,7 @@ import {
 } from '../../components/ui';
 import { colors } from '../../theme';
 import type { ExamPaper, ExamPapersResponse, PickedDocument, ScreenProps } from '../../types';
+import { t } from '../../i18n';
 
 const PAPER_MANAGERS = ['admin', 'sub_admin', 'coordinator', 'principal'];
 
@@ -101,14 +102,14 @@ export default function ExamPapers({ params, session }: ScreenProps) {
           <View style={[styles.hero, { backgroundColor: colors.brand }]}>
             <Text style={styles.heroTitle}>{data.class?.name || className}</Text>
             <Text style={styles.heroSub}>
-              {data.exam?.name} · one question paper per subject
+              {data.exam?.name} · {t('one question paper per subject')}
             </Text>
           </View>
 
           {data.subjects.length === 0 && (
             <Empty
               icon="📚"
-              text="This class has no subjects yet — add them from the Classes screen."
+              text={t('This class has no subjects yet — add them from the Classes screen.')}
             />
           )}
           {data.subjects.map(({ subject, paper }) => (
@@ -124,11 +125,11 @@ export default function ExamPapers({ params, session }: ScreenProps) {
                       📄 {paper.paper_name}
                     </Text>
                   ) : (
-                    <Text style={[styles.meta, { color: colors.warn }]}>Not uploaded yet</Text>
+                    <Text style={[styles.meta, { color: colors.warn }]}>{t('Not uploaded yet')}</Text>
                   )}
                   {paper ? (
                     <Text style={styles.meta}>
-                      by {paper.uploaded_by_name} · {fmtDate(paper.created_at)}
+                      {t('by {name}', { name: paper.uploaded_by_name })} · {fmtDate(paper.created_at)}
                     </Text>
                   ) : null}
                 </View>
@@ -137,7 +138,7 @@ export default function ExamPapers({ params, session }: ScreenProps) {
               {canUpload && (
                 <View style={{ flexDirection: 'row', marginTop: 10 }}>
                   <Button
-                    label={paper ? 'Replace PDF' : '⬆️ Upload PDF'}
+                    label={paper ? t('Replace PDF') : `⬆️ ${t('Upload PDF')}`}
                     kind={paper ? 'soft' : 'primary'}
                     small
                     busy={busySubject === subject}
@@ -145,7 +146,7 @@ export default function ExamPapers({ params, session }: ScreenProps) {
                     style={{ flex: 1, marginRight: paper ? 8 : 0 }}
                   />
                   {paper && (
-                    <Button label="Delete" kind="danger" small onPress={() => removePaper(paper)} style={{ flex: 1 }} />
+                    <Button label={t('Delete')} kind="danger" small onPress={() => removePaper(paper)} style={{ flex: 1 }} />
                   )}
                 </View>
               )}

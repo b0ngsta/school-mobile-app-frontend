@@ -19,6 +19,7 @@ import {
 import { MANAGER_ROLES } from '../../roles';
 import { colors } from '../../theme';
 import type { AdminClass, ScreenProps } from '../../types';
+import { t } from '../../i18n';
 
 function SubjectEditor({ subjects, setSubjects }: { subjects: string[]; setSubjects: (s: string[]) => void }) {
   const [draft, setDraft] = useState('');
@@ -32,9 +33,9 @@ function SubjectEditor({ subjects, setSubjects }: { subjects: string[]; setSubje
     <View>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
         <View style={{ flex: 1 }}>
-          <Input placeholder="e.g. Mathematics" value={draft} onChangeText={setDraft} onSubmitEditing={add} />
+          <Input placeholder={t('e.g. Mathematics')} value={draft} onChangeText={setDraft} onSubmitEditing={add} />
         </View>
-        <Button label="+ Add" kind="soft" small onPress={add} style={{ marginLeft: 8, marginTop: 2 }} />
+        <Button label={t('+ Add')} kind="soft" small onPress={add} style={{ marginLeft: 8, marginTop: 2 }} />
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
         {subjects.map(s => (
@@ -76,7 +77,7 @@ export default function StaffClasses({ navigate, session }: ScreenProps) {
   }, [load]);
 
   const addClass = async () => {
-    if (!name.trim()) return setError('Class name is required');
+    if (!name.trim()) return setError(t('Class name is required'));
     setBusy(true);
     try {
       await api('/classes', {
@@ -128,14 +129,14 @@ export default function StaffClasses({ navigate, session }: ScreenProps) {
     <View style={{ flex: 1 }}>
       <Screen refreshing={refreshing} onRefresh={() => load(true)}>
         <ErrorBox message={error} />
-        {classes?.length === 0 && <Empty icon="🏫" text="No classes yet — add your first class." />}
+        {classes?.length === 0 && <Empty icon="🏫" text={t('No classes yet — add your first class.')} />}
         {classes?.map(c => (
           <Card key={c.id}>
             <View style={styles.head}>
               <Text style={styles.name}>{c.name}</Text>
               {c.fee_amount != null && (
                 <View style={[styles.feePill, { backgroundColor: colors.okSoft }]}>
-                  <Text style={{ color: colors.ok, fontSize: 12, fontWeight: '700' }}>{inr(c.fee_amount)} fee</Text>
+                  <Text style={{ color: colors.ok, fontSize: 12, fontWeight: '700' }}>{t('{amount} fee', { amount: inr(c.fee_amount) })}</Text>
                 </View>
               )}
             </View>
@@ -148,11 +149,11 @@ export default function StaffClasses({ navigate, session }: ScreenProps) {
                 </View>
               ))}
               {(c.subjects || []).length === 0 && (
-                <Text style={{ color: colors.subtle, fontSize: 12 }}>No subjects yet.</Text>
+                <Text style={{ color: colors.subtle, fontSize: 12 }}>{t('No subjects yet.')}</Text>
               )}
               {isManager && (
                 <TouchableOpacity onPress={() => { setSubjectsFor(c); setEditSubjects(c.subjects || []) }}>
-                  <Text style={{ color: colors.brand, fontSize: 12, fontWeight: '700', padding: 4 }}>✏️ Edit</Text>
+                  <Text style={{ color: colors.brand, fontSize: 12, fontWeight: '700', padding: 4 }}>{t('✏️ Edit')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -172,7 +173,7 @@ export default function StaffClasses({ navigate, session }: ScreenProps) {
                   })
                 }>
                 <View style={styles.section}>
-                  <Text style={{ fontWeight: '700', color: colors.ink, fontSize: 13.5 }}>Section {s.name}</Text>
+                  <Text style={{ fontWeight: '700', color: colors.ink, fontSize: 13.5 }}>{t('Section {name}', { name: s.name })}</Text>
                   <Text style={{ color: colors.subtle, fontSize: 12 }}>
                     🧑‍🎓 {s.student_count}{s.class_teacher ? ` · ${s.class_teacher}` : ''}  ›
                   </Text>
@@ -180,29 +181,29 @@ export default function StaffClasses({ navigate, session }: ScreenProps) {
               </TouchableOpacity>
             ))}
             {isManager && (
-              <Button label="+ Add section" kind="soft" small onPress={() => setSectionFor(c)} style={{ marginTop: 8 }} />
+              <Button label={t('+ Add section')} kind="soft" small onPress={() => setSectionFor(c)} style={{ marginTop: 8 }} />
             )}
           </Card>
         ))}
       </Screen>
       {isManager && <Fab onPress={() => setAdding(true)} />}
 
-      <Sheet visible={adding} title="Add class" onClose={() => setAdding(false)}>
-        <Input label="Class name" placeholder="e.g. Class 5" value={name} onChangeText={setName} />
-        <Input label="Standard fee (₹)" placeholder="e.g. 15000" keyboardType="numeric" value={fee} onChangeText={setFee} />
-        <Text style={{ fontSize: 13, fontWeight: '600', color: colors.ink, marginBottom: 6 }}>Subjects</Text>
+      <Sheet visible={adding} title={t('Add class')} onClose={() => setAdding(false)}>
+        <Input label={t('Class name')} placeholder={t('e.g. Class 5')} value={name} onChangeText={setName} />
+        <Input label={t('Standard fee (₹)')} placeholder={t('e.g. 15000')} keyboardType="numeric" value={fee} onChangeText={setFee} />
+        <Text style={{ fontSize: 13, fontWeight: '600', color: colors.ink, marginBottom: 6 }}>{t('Subjects')}</Text>
         <SubjectEditor subjects={subjects} setSubjects={setSubjects} />
-        <Button label="Add class" onPress={addClass} busy={busy} />
+        <Button label={t('Add class')} onPress={addClass} busy={busy} />
       </Sheet>
 
-      <Sheet visible={!!sectionFor} title={`Add section — ${sectionFor?.name}`} onClose={() => setSectionFor(null)}>
-        <Input label="Section name" placeholder="e.g. A" value={sectionName} onChangeText={setSectionName} />
-        <Button label="Add section" onPress={addSection} busy={busy} />
+      <Sheet visible={!!sectionFor} title={`${t('Add section')} — ${sectionFor?.name}`} onClose={() => setSectionFor(null)}>
+        <Input label={t('Section name')} placeholder={t('e.g. A')} value={sectionName} onChangeText={setSectionName} />
+        <Button label={t('Add section')} onPress={addSection} busy={busy} />
       </Sheet>
 
-      <Sheet visible={!!subjectsFor} title={`Subjects — ${subjectsFor?.name}`} onClose={() => setSubjectsFor(null)}>
+      <Sheet visible={!!subjectsFor} title={`${t('Subjects')} — ${subjectsFor?.name}`} onClose={() => setSubjectsFor(null)}>
         <SubjectEditor subjects={editSubjects} setSubjects={setEditSubjects} />
-        <Button label="Save subjects" onPress={saveSubjects} busy={busy} />
+        <Button label={t('Save subjects')} onPress={saveSubjects} busy={busy} />
       </Sheet>
     </View>
   );

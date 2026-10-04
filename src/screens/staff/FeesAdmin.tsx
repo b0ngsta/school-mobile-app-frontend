@@ -21,6 +21,7 @@ import {
 } from '../../components/ui';
 import { colors } from '../../theme';
 import type { AdminFee, ClaimStats, FeeStats, ScreenProps } from '../../types';
+import { t } from '../../i18n';
 
 const METHODS = ['cash', 'card', 'upi', 'netbanking', 'wallet'];
 
@@ -74,12 +75,12 @@ export default function FeesAdmin({ navigate }: ScreenProps) {
         <ErrorBox message={error} />
 
         <View style={styles.statRow}>
-          <IconStat icon="💰" label="Collected" value={stats ? inr(stats.collected) : '—'} tint={colors.ok} soft={colors.okSoft} />
-          <IconStat icon="⏳" label="Pending" value={stats ? inr(stats.pending) : '—'} tint={colors.warn} soft={colors.warnSoft} />
+          <IconStat icon="💰" label={t('Collected')} value={stats ? inr(stats.collected) : '—'} tint={colors.ok} soft={colors.okSoft} />
+          <IconStat icon="⏳" label={t('Pending')} value={stats ? inr(stats.pending) : '—'} tint={colors.warn} soft={colors.warnSoft} />
         </View>
         <View style={styles.statRow}>
-          <IconStat icon="⚠️" label="Overdue" value={stats ? inr(stats.overdue) : '—'} tint={colors.danger} soft={colors.dangerSoft} />
-          <IconStat icon="📈" label="Collection" value={stats ? `${stats.collection_rate}%` : '—'} tint={colors.brand} soft={colors.brandSoft} />
+          <IconStat icon="⚠️" label={t('Overdue')} value={stats ? inr(stats.overdue) : '—'} tint={colors.danger} soft={colors.dangerSoft} />
+          <IconStat icon="📈" label={t('Collection')} value={stats ? `${stats.collection_rate}%` : '—'} tint={colors.brand} soft={colors.brandSoft} />
         </View>
 
         {/* claims banner */}
@@ -87,27 +88,27 @@ export default function FeesAdmin({ navigate }: ScreenProps) {
           <Card style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.brandSoft, borderColor: colors.brandSoft }}>
             <Text style={{ fontSize: 22, marginRight: 12 }}>🧾</Text>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: '800', color: colors.brand, fontSize: 14 }}>Payment claims</Text>
+              <Text style={{ fontWeight: '800', color: colors.brand, fontSize: 14 }}>{t('Payment claims')}</Text>
               <Text style={{ color: colors.subtle, fontSize: 12, marginTop: 1 }}>
-                {claimStats ? `${claimStats.pending} pending · ${claimStats.approved} approved` : 'Parent-submitted payment proofs'}
+                {claimStats ? t('{p} pending · {a} approved', { p: claimStats.pending, a: claimStats.approved }) : t('Parent-submitted payment proofs')}
               </Text>
             </View>
             <Text style={{ color: colors.brand, fontSize: 22 }}>›</Text>
           </Card>
         </TouchableOpacity>
 
-        <SectionTitle>Fee records</SectionTitle>
+        <SectionTitle>{t('Fee records')}</SectionTitle>
         <Segments
           items={[
-            { value: '', label: 'All' },
-            { value: 'pending', label: 'Pending' },
-            { value: 'overdue', label: 'Overdue' },
-            { value: 'paid', label: 'Paid' },
+            { value: '', label: t('All') },
+            { value: 'pending', label: t('Pending') },
+            { value: 'overdue', label: t('Overdue') },
+            { value: 'paid', label: t('Paid') },
           ]}
           value={filter}
           onChange={setFilter}
         />
-        {items?.length === 0 && <Empty icon="💰" text="No fee records." />}
+        {items?.length === 0 && <Empty icon="💰" text={t('No fee records.')} />}
         {items?.map(f => (
           <Card key={f.id}>
             <View style={styles.head}>
@@ -120,28 +121,28 @@ export default function FeesAdmin({ navigate }: ScreenProps) {
             <View style={styles.footer}>
               <Text style={styles.amount}>{inr(f.amount)}</Text>
               {f.status !== 'paid' ? (
-                <Button label="Mark paid" kind="soft" small onPress={() => { setPaying(f); setMethod('cash') }} />
+                <Button label={t('Mark paid')} kind="soft" small onPress={() => { setPaying(f); setMethod('cash') }} />
               ) : (
-                <Text style={{ color: colors.subtle, fontSize: 12 }}>Paid {fmtDate(f.paid_date)}</Text>
+                <Text style={{ color: colors.subtle, fontSize: 12 }}>{t('Paid {date}', { date: fmtDate(f.paid_date) })}</Text>
               )}
             </View>
           </Card>
         ))}
       </Screen>
 
-      <Sheet visible={!!paying} title={paying ? `Mark paid — ${paying.student_name}` : ''} onClose={() => setPaying(null)}>
+      <Sheet visible={!!paying} title={paying ? `${t('Mark paid')} — ${paying.student_name}` : ''} onClose={() => setPaying(null)}>
         {paying && (
           <>
             <Text style={{ color: colors.ink, fontWeight: '800', fontSize: 18, marginBottom: 10 }}>
               {inr(paying.amount)} · {paying.title}
             </Text>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: colors.ink, marginBottom: 6 }}>Payment method</Text>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: colors.ink, marginBottom: 6 }}>{t('Payment method')}</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
               {METHODS.map(m => (
                 <Chip key={m} label={m.toUpperCase()} active={method === m} onPress={() => setMethod(m)} />
               ))}
             </View>
-            <Button label="Confirm payment" onPress={pay} busy={busy} />
+            <Button label={t('Confirm payment')} onPress={pay} busy={busy} />
           </>
         )}
       </Sheet>

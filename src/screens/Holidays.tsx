@@ -19,6 +19,7 @@ import {
 import { MANAGER_ROLES } from '../roles';
 import { colors } from '../theme';
 import type { CalendarPayload, Holiday, ScreenProps } from '../types';
+import { t } from '../i18n';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'];
@@ -122,7 +123,7 @@ export default function Holidays({ session }: ScreenProps) {
 
   const save = async () => {
     if (!editing) return;
-    if (!form.name.trim()) return setError('Holiday name is required');
+    if (!form.name.trim()) return setError(t('Holiday name is required'));
     setBusy(true);
     try {
       const body = { date: editing.date, name: form.name.trim(), description: form.description.trim() || null };
@@ -184,7 +185,7 @@ export default function Holidays({ session }: ScreenProps) {
             <TouchableOpacity onPress={prev} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Text style={styles.nav}>‹</Text>
             </TouchableOpacity>
-            <Text style={styles.monthTitle}>{MONTHS[month]} {year}</Text>
+            <Text style={styles.monthTitle}>{t(MONTHS[month])} {year}</Text>
             <TouchableOpacity onPress={next} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Text style={styles.nav}>›</Text>
             </TouchableOpacity>
@@ -193,7 +194,7 @@ export default function Holidays({ session }: ScreenProps) {
           {/* weekday header */}
           <View style={styles.week}>
             {WEEK.map(w => (
-              <Text key={w} style={styles.weekDay}>{w}</Text>
+              <Text key={w} style={styles.weekDay}>{t(`week.${w}`)}</Text>
             ))}
           </View>
 
@@ -244,7 +245,7 @@ export default function Holidays({ session }: ScreenProps) {
 
           {/* legend */}
           <View style={styles.legend}>
-            {([['holiday', 'Holiday · Sun'], ['exam', 'Exam'], ['event', 'Event']] as const).map(
+            {([['holiday', t('Holiday · Sun')], ['exam', t('Exam')], ['event', t('Event')]] as const).map(
               ([kind, label]) => (
                 <View key={kind} style={[styles.legendPill, { backgroundColor: kindColors[kind].bg }]}>
                   <Text style={{ color: kindColors[kind].fg, fontSize: 10.5, fontWeight: '700' }}>
@@ -256,14 +257,14 @@ export default function Holidays({ session }: ScreenProps) {
           </View>
           {canEdit && (
             <Text style={{ color: colors.subtle, fontSize: 11.5, marginTop: 8, textAlign: 'center' }}>
-              Tap a date to add or edit a holiday.
+              {t('Tap a date to add or edit a holiday.')}
             </Text>
           )}
         </Card>
 
         {/* month list */}
         {monthHolidays.length === 0 && monthEvents.length === 0 && monthExams.length === 0 ? (
-          <Empty icon="🏖️" text={`No holidays or events in ${MONTHS[month]}.`} />
+          <Empty icon="🏖️" text={t('No holidays or events in {month}.', { month: t(MONTHS[month]) })} />
         ) : (
           <>
             {monthHolidays.map(h => (
@@ -286,15 +287,15 @@ export default function Holidays({ session }: ScreenProps) {
 
       <Sheet
         visible={!!editing}
-        title={editing ? `${editing.holiday ? 'Edit' : 'Add'} holiday — ${fmtDate(editing.date)}` : ''}
+        title={editing ? `${editing.holiday ? t('Edit holiday') : t('Add holiday')} — ${fmtDate(editing.date)}` : ''}
         onClose={() => setEditing(null)}>
         {editing && (
           <>
-            <Input label="Holiday name" placeholder="e.g. Diwali" value={form.name} onChangeText={v => setForm({ ...form, name: v })} />
-            <Input label="Description (optional)" value={form.description} onChangeText={v => setForm({ ...form, description: v })} />
-            <Button label={editing.holiday ? 'Save changes' : 'Add holiday'} onPress={save} busy={busy} />
+            <Input label={t('Holiday name')} placeholder={t('e.g. Diwali')} value={form.name} onChangeText={v => setForm({ ...form, name: v })} />
+            <Input label={t('Description (optional)')} value={form.description} onChangeText={v => setForm({ ...form, description: v })} />
+            <Button label={editing.holiday ? t('Save changes') : t('Add holiday')} onPress={save} busy={busy} />
             {editing.holiday && (
-              <Button label="Delete holiday" kind="danger" onPress={remove} busy={busy} style={{ marginTop: 8 }} />
+              <Button label={t('Delete holiday')} kind="danger" onPress={remove} busy={busy} style={{ marginTop: 8 }} />
             )}
           </>
         )}
@@ -316,7 +317,7 @@ function EventRow({ tone, date, title, sub }: {
       <View style={[styles.datePill, { backgroundColor: tone.bg }]}>
         <Text style={{ color: tone.fg, fontWeight: '800', fontSize: 15 }}>{d.getDate()}</Text>
         <Text style={{ color: tone.fg, fontSize: 9.5, fontWeight: '700' }}>
-          {MONTHS[d.getMonth()].slice(0, 3)}
+          {t('months')[d.getMonth()]}
         </Text>
       </View>
       <View style={{ flex: 1, marginLeft: 12 }}>

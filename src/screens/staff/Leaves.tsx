@@ -20,6 +20,7 @@ import {
 import { MANAGER_ROLES } from '../../roles';
 import { ROLE_LABELS, colors } from '../../theme';
 import type { LeaveRequest, ScreenProps } from '../../types';
+import { t } from '../../i18n';
 
 export default function Leaves({ session }: ScreenProps) {
   const isManager = MANAGER_ROLES.includes(session.user_type);
@@ -51,7 +52,7 @@ export default function Leaves({ session }: ScreenProps) {
 
   const submit = async () => {
     if (!form.from_date || !form.to_date || !form.reason.trim()) {
-      return setError('From date, to date and reason are required (YYYY-MM-DD)');
+      return setError(t('From date, to date and reason are required (YYYY-MM-DD)'));
     }
     setBusy(true);
     try {
@@ -94,14 +95,14 @@ export default function Leaves({ session }: ScreenProps) {
         {isManager && (
           <Segments
             items={[
-              { value: 'all', label: '📥 All requests' },
-              { value: 'mine', label: '🧳 My requests' },
+              { value: 'all', label: `📥 ${t('All requests')}` },
+              { value: 'mine', label: `🧳 ${t('My requests')}` },
             ]}
             value={tab}
             onChange={setTab}
           />
         )}
-        {items?.length === 0 && <Empty icon="🧳" text="No leave requests yet." />}
+        {items?.length === 0 && <Empty icon="🧳" text={t('No leave requests yet.')} />}
         {items?.map(l => (
           <Card key={l.id}>
             <View style={styles.head}>
@@ -110,11 +111,11 @@ export default function Leaves({ session }: ScreenProps) {
                   <Avatar name={l.full_name} uri={photoUrl(l.photo_path)} size={34} />
                   <View style={{ marginLeft: 8, flex: 1 }}>
                     <Text style={styles.name}>{l.full_name}</Text>
-                    <Text style={styles.sub}>{l.user_type ? ROLE_LABELS[l.user_type] : ''}</Text>
+                    <Text style={styles.sub}>{l.user_type ? t(ROLE_LABELS[l.user_type]) : ''}</Text>
                   </View>
                 </View>
               ) : (
-                <Text style={[styles.name, { flex: 1 }]}>Leave request</Text>
+                <Text style={[styles.name, { flex: 1 }]}>{t('Leave request')}</Text>
               )}
               <Badge status={l.status} />
             </View>
@@ -124,12 +125,12 @@ export default function Leaves({ session }: ScreenProps) {
             <Text style={{ color: colors.ink, fontSize: 13, marginTop: 4 }}>{l.reason}</Text>
             {l.reviewed_by_name ? (
               <Text style={[styles.sub, { marginTop: 4 }]}>
-                Reviewed by {l.reviewed_by_name}{l.review_note ? ` — ${l.review_note}` : ''}
+                {t('Reviewed by {name}', { name: l.reviewed_by_name })}{l.review_note ? ` — ${l.review_note}` : ''}
               </Text>
             ) : null}
             {tab === 'all' && isManager && l.status === 'pending' && (
               <Button
-                label="Review"
+                label={t('Review')}
                 kind="soft"
                 small
                 style={{ marginTop: 10, alignSelf: 'flex-start' }}
@@ -141,11 +142,11 @@ export default function Leaves({ session }: ScreenProps) {
       </Screen>
       <Fab icon="🧳" onPress={() => setRequesting(true)} />
 
-      <Sheet visible={requesting} title="Request leave" onClose={() => setRequesting(false)}>
-        <Input label="From (YYYY-MM-DD)" placeholder="2026-07-20" value={form.from_date} onChangeText={v => setForm({ ...form, from_date: v })} />
-        <Input label="To (YYYY-MM-DD)" placeholder="2026-07-22" value={form.to_date} onChangeText={v => setForm({ ...form, to_date: v })} />
-        <Input label="Reason" multiline style={{ minHeight: 70, textAlignVertical: 'top' }} value={form.reason} onChangeText={v => setForm({ ...form, reason: v })} />
-        <Button label="Submit request" onPress={submit} busy={busy} />
+      <Sheet visible={requesting} title={t('Request leave')} onClose={() => setRequesting(false)}>
+        <Input label={t('From (YYYY-MM-DD)')} placeholder="2026-07-20" value={form.from_date} onChangeText={v => setForm({ ...form, from_date: v })} />
+        <Input label={t('To (YYYY-MM-DD)')} placeholder="2026-07-22" value={form.to_date} onChangeText={v => setForm({ ...form, to_date: v })} />
+        <Input label={t('Reason')} multiline style={{ minHeight: 70, textAlignVertical: 'top' }} value={form.reason} onChangeText={v => setForm({ ...form, reason: v })} />
+        <Button label={t('Submit request')} onPress={submit} busy={busy} />
       </Sheet>
 
       <Sheet
@@ -155,10 +156,10 @@ export default function Leaves({ session }: ScreenProps) {
         {reviewing && (
           <>
             <Text style={{ color: colors.ink, fontSize: 13.5, marginBottom: 10 }}>{reviewing.reason}</Text>
-            <Input label="Note (optional)" value={note} onChangeText={setNote} />
+            <Input label={t('Note (optional)')} value={note} onChangeText={setNote} />
             <View style={{ flexDirection: 'row' }}>
-              <Button label="✅ Approve" onPress={() => review('approve')} busy={busy} style={{ flex: 1, marginRight: 8 }} />
-              <Button label="✕ Reject" kind="danger" onPress={() => review('reject')} busy={busy} style={{ flex: 1 }} />
+              <Button label={t('✅ Approve')} onPress={() => review('approve')} busy={busy} style={{ flex: 1, marginRight: 8 }} />
+              <Button label={t('✕ Reject')} kind="danger" onPress={() => review('reject')} busy={busy} style={{ flex: 1 }} />
             </View>
           </>
         )}

@@ -17,6 +17,7 @@ import {
 import { MANAGER_ROLES } from '../../roles';
 import { colors } from '../../theme';
 import type { AdminClass, Assignment, MarkAttendanceRow, ScreenProps, SectionPick } from '../../types';
+import { t } from '../../i18n';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -122,12 +123,12 @@ export default function MarkAttendance({ params, session }: ScreenProps) {
     <Screen refreshing={refreshing} onRefresh={() => load(true)}>
       <ErrorBox message={error} />
 
-      <SectionTitle>Pick a section · {today()}</SectionTitle>
+      <SectionTitle>{t('Pick a section')} · {today()}</SectionTitle>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 }}>
         {sections?.map(s => (
           <Chip key={s.sectionId} label={s.label} active={sel?.sectionId === s.sectionId} onPress={() => setSel(s)} />
         ))}
-        {sections?.length === 0 && <Empty icon="🏫" text="No sections available to you." />}
+        {sections?.length === 0 && <Empty icon="🏫" text={t('No sections available to you.')} />}
       </View>
 
       {sel && rows && (
@@ -135,34 +136,34 @@ export default function MarkAttendance({ params, session }: ScreenProps) {
           <View style={styles.summaryRow}>
             <Card style={[styles.sumCard, { backgroundColor: colors.brandSoft, borderColor: colors.brandSoft }]}>
               <Text style={[styles.sumNum, { color: colors.brand }]}>{rows.length}</Text>
-              <Text style={styles.sumLbl}>Total</Text>
+              <Text style={styles.sumLbl}>{t('Total')}</Text>
             </Card>
             <Card style={[styles.sumCard, { backgroundColor: colors.okSoft, borderColor: colors.okSoft }]}>
               <Text style={[styles.sumNum, { color: colors.ok }]}>{counts?.present}</Text>
-              <Text style={styles.sumLbl}>Present</Text>
+              <Text style={styles.sumLbl}>{t('Present')}</Text>
             </Card>
             <Card style={[styles.sumCard, { backgroundColor: colors.dangerSoft, borderColor: colors.dangerSoft }]}>
               <Text style={[styles.sumNum, { color: colors.danger }]}>{counts?.absent}</Text>
-              <Text style={styles.sumLbl}>Absent</Text>
+              <Text style={styles.sumLbl}>{t('Absent')}</Text>
             </Card>
             <Card style={[styles.sumCard, { backgroundColor: colors.warnSoft, borderColor: colors.warnSoft }]}>
               <Text style={[styles.sumNum, { color: colors.warn }]}>{counts?.leave}</Text>
-              <Text style={styles.sumLbl}>Leave</Text>
+              <Text style={styles.sumLbl}>{t('Leave')}</Text>
             </Card>
           </View>
 
-          {rows.length === 0 && <Empty icon="🧑‍🎓" text="No students in this section." />}
+          {rows.length === 0 && <Empty icon="🧑‍🎓" text={t('No students in this section.')} />}
           {rows.map(r => (
             <Card key={r.student_id} style={{ paddingVertical: 10 }}>
               <View style={styles.rowHead}>
                 <View style={{ flex: 1, paddingRight: 8 }}>
                   <Text style={styles.name}>{r.full_name}</Text>
-                  <Text style={styles.roll}>Roll No. {r.roll_no || '—'}</Text>
+                  <Text style={styles.roll}>{t('Roll No.')} {r.roll_no || '—'}</Text>
                 </View>
                 <View style={{ flexDirection: 'row' }}>
-                  <Chip label="P" tone="ok" active={r.status === 'present'} onPress={() => setStatus(r.student_id, 'present')} />
-                  <Chip label="A" tone="danger" active={r.status === 'absent'} onPress={() => setStatus(r.student_id, 'absent')} />
-                  <Chip label="L" active={r.status === 'leave'} onPress={() => setStatus(r.student_id, 'leave')} />
+                  <Chip label={t('P')} tone="ok" active={r.status === 'present'} onPress={() => setStatus(r.student_id, 'present')} />
+                  <Chip label={t('A')} tone="danger" active={r.status === 'absent'} onPress={() => setStatus(r.student_id, 'absent')} />
+                  <Chip label={t('L')} active={r.status === 'leave'} onPress={() => setStatus(r.student_id, 'leave')} />
                 </View>
               </View>
             </Card>
@@ -172,10 +173,10 @@ export default function MarkAttendance({ params, session }: ScreenProps) {
             <>
               {savedAt && (
                 <Text style={{ color: colors.ok, fontWeight: '700', textAlign: 'center', marginBottom: 6 }}>
-                  ✅ Attendance saved
+                  ✅ {t('Attendance saved')}
                 </Text>
               )}
-              <Button label="Save attendance" onPress={save} busy={saving} />
+              <Button label={t('Save attendance')} onPress={save} busy={saving} />
             </>
           )}
         </>

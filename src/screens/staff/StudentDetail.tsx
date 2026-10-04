@@ -18,6 +18,7 @@ import {
 } from '../../components/ui';
 import { colors } from '../../theme';
 import type { AttendanceResponse, HomeworkItem, Remark, ScreenProps, StudentListItem } from '../../types';
+import { t } from '../../i18n';
 
 export default function StudentDetail({ params }: ScreenProps) {
   const { studentId } = params || {};
@@ -53,7 +54,7 @@ export default function StudentDetail({ params }: ScreenProps) {
   }, [load]);
 
   const addHomework = async () => {
-    if (!hw.title.trim()) return setError('Homework title is required');
+    if (!hw.title.trim()) return setError(t('Homework title is required'));
     setBusy(true);
     try {
       await api(`/students/${studentId}/homework`, {
@@ -97,7 +98,7 @@ export default function StudentDetail({ params }: ScreenProps) {
           <View style={{ marginLeft: 12, flex: 1 }}>
             <Text style={styles.name}>{student.full_name}</Text>
             <Text style={styles.sub}>
-              {student.class_name || '—'}{student.section_name ? ` · ${student.section_name}` : ''} · Roll {student.roll_no || '—'}
+              {student.class_name || '—'}{student.section_name ? ` · ${student.section_name}` : ''} · {t('Roll')} {student.roll_no || '—'}
             </Text>
             {student.guardian_phone ? <Text style={styles.sub}>📞 {student.guardian_phone}</Text> : null}
           </View>
@@ -113,8 +114,8 @@ export default function StudentDetail({ params }: ScreenProps) {
 
       <Segments
         items={[
-          { value: 'homework', label: '📚 Homework' },
-          { value: 'remarks', label: '📝 Remarks' },
+          { value: 'homework', label: `📚 ${t('Homework')}` },
+          { value: 'remarks', label: `📝 ${t('Remarks')}` },
         ]}
         value={tab}
         onChange={setTab}
@@ -122,15 +123,15 @@ export default function StudentDetail({ params }: ScreenProps) {
 
       {tab === 'homework' && (
         <>
-          <Button label="+ Add homework" kind="soft" small onPress={() => setAddingHw(true)} style={{ marginBottom: 10, alignSelf: 'flex-start' }} />
-          {!homework?.length && <Empty icon="📚" text="No homework yet." />}
+          <Button label={t('+ Add homework')} kind="soft" small onPress={() => setAddingHw(true)} style={{ marginBottom: 10, alignSelf: 'flex-start' }} />
+          {!homework?.length && <Empty icon="📚" text={t('No homework yet.')} />}
           {homework?.map(h => (
             <Card key={h.id}>
               <View style={styles.rowHead}>
                 <Text style={styles.rowTitle}>{h.title}</Text>
                 <Badge status={h.status} />
               </View>
-              <Text style={styles.sub}>Due {fmtDate(h.due_date)}</Text>
+              <Text style={styles.sub}>{t('Due {date}', { date: fmtDate(h.due_date) })}</Text>
               {h.note ? <Text style={[styles.sub, { marginTop: 4 }]}>{h.note}</Text> : null}
             </Card>
           ))}
@@ -139,8 +140,8 @@ export default function StudentDetail({ params }: ScreenProps) {
 
       {tab === 'remarks' && (
         <>
-          <Button label="+ Add remark" kind="soft" small onPress={() => setAddingRemark(true)} style={{ marginBottom: 10, alignSelf: 'flex-start' }} />
-          {!remarks?.length && <Empty icon="📝" text="No remarks yet." />}
+          <Button label={t('+ Add remark')} kind="soft" small onPress={() => setAddingRemark(true)} style={{ marginBottom: 10, alignSelf: 'flex-start' }} />
+          {!remarks?.length && <Empty icon="📝" text={t('No remarks yet.')} />}
           {remarks?.map(r => (
             <Card key={r.id}>
               <Text style={{ color: colors.ink, fontSize: 14 }}>{r.remark}</Text>
@@ -150,16 +151,16 @@ export default function StudentDetail({ params }: ScreenProps) {
         </>
       )}
 
-      <Sheet visible={addingHw} title="Add homework" onClose={() => setAddingHw(false)}>
-        <Input label="Title" value={hw.title} onChangeText={v => setHw({ ...hw, title: v })} />
-        <Input label="Due date (YYYY-MM-DD)" placeholder="2026-07-20" value={hw.due_date} onChangeText={v => setHw({ ...hw, due_date: v })} />
-        <Input label="Note (optional)" value={hw.note} onChangeText={v => setHw({ ...hw, note: v })} multiline />
-        <Button label="Add homework" onPress={addHomework} busy={busy} />
+      <Sheet visible={addingHw} title={t('Add homework')} onClose={() => setAddingHw(false)}>
+        <Input label={t('Title')} value={hw.title} onChangeText={v => setHw({ ...hw, title: v })} />
+        <Input label={t('Due date (YYYY-MM-DD)')} placeholder="2026-07-20" value={hw.due_date} onChangeText={v => setHw({ ...hw, due_date: v })} />
+        <Input label={t('Note (optional)')} value={hw.note} onChangeText={v => setHw({ ...hw, note: v })} multiline />
+        <Button label={t('Add homework')} onPress={addHomework} busy={busy} />
       </Sheet>
 
-      <Sheet visible={addingRemark} title="Add remark" onClose={() => setAddingRemark(false)}>
-        <Input label="Remark" value={remark} onChangeText={setRemark} multiline style={{ minHeight: 80, textAlignVertical: 'top' }} />
-        <Button label="Add remark" onPress={addRemark} busy={busy} />
+      <Sheet visible={addingRemark} title={t('Add remark')} onClose={() => setAddingRemark(false)}>
+        <Input label={t('Remark')} value={remark} onChangeText={setRemark} multiline style={{ minHeight: 80, textAlignVertical: 'top' }} />
+        <Button label={t('Add remark')} onPress={addRemark} busy={busy} />
       </Sheet>
     </Screen>
   );

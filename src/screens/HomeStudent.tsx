@@ -16,6 +16,7 @@ import type { GridItem } from '../components/ui';
 import { useI18n } from '../hooks';
 import { colors, shadow } from '../theme';
 import type { FeesResponse, ScreenProps, StudentDashboard } from '../types';
+import { t } from '../i18n';
 
 const GRID: GridItem[] = [
   { icon: 'calendar-check', label: 'Attendance', route: 'Attendance' },
@@ -32,9 +33,9 @@ const GRID: GridItem[] = [
 
 const greeting = () => {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 12) return t('Good morning');
+  if (h < 17) return t('Good afternoon');
+  return t('Good evening');
 };
 
 export default function HomeStudent({ navigate }: ScreenProps) {
@@ -86,7 +87,7 @@ export default function HomeStudent({ navigate }: ScreenProps) {
               <Text style={styles.heroName} numberOfLines={1}>{p?.full_name}</Text>
               <Text style={[styles.heroSub, { color: colors.onBrandSub }]} numberOfLines={1}>
                 {p?.class_name ? `${p.class_name} · ${p.section_name || ''}` : t('dash.noClass')}
-                {p?.roll_no ? `  ·  Roll ${p.roll_no}` : ''}
+                {p?.roll_no ? `  ·  ${t('dash.roll', { n: p.roll_no })}` : ''}
               </Text>
             </View>
           </View>
@@ -98,21 +99,21 @@ export default function HomeStudent({ navigate }: ScreenProps) {
             <Text style={[styles.statValue, { color: colors.info }]}>
               {dash?.attendance?.percent != null ? `${dash.attendance.percent}%` : '—'}
             </Text>
-            <Text style={styles.statLabel}>Attendance</Text>
+            <Text style={styles.statLabel}>{t('Attendance')}</Text>
           </View>
           <View style={[styles.statCell, styles.statCellMid]}>
             <Text style={[styles.statValue, { color: colors.ok }]}>{paid != null ? inr(paid) : '—'}</Text>
-            <Text style={styles.statLabel}>Fees Paid</Text>
+            <Text style={styles.statLabel}>{t('Fees Paid')}</Text>
           </View>
           <View style={styles.statCell}>
             <Text style={[styles.statValue, { color: due ? colors.danger : colors.ink }]}>
               {due != null ? inr(due) : '—'}
             </Text>
-            <Text style={styles.statLabel}>Due Fees</Text>
+            <Text style={styles.statLabel}>{t('Due Fees')}</Text>
           </View>
         </View>
         <Text style={styles.totalLine}>
-          Total fees {total != null ? inr(total) : '—'}
+          {t('Total fees')} {total != null ? inr(total) : '—'}
         </Text>
 
         <UpdatesBar

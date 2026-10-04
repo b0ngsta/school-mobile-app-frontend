@@ -21,6 +21,7 @@ import {
 import { MANAGER_ROLES } from '../../roles';
 import { colors } from '../../theme';
 import type { AdminClass, AdminExam, ExamStats, ScreenProps } from '../../types';
+import { t } from '../../i18n';
 
 export default function StaffExams({ navigate, session }: ScreenProps) {
   const isManager = MANAGER_ROLES.includes(session.user_type);
@@ -52,7 +53,7 @@ export default function StaffExams({ navigate, session }: ScreenProps) {
 
   const create = async () => {
     if (!form.name.trim() || !form.start_date || !form.end_date) {
-      return setError('Name, start date and end date are required (YYYY-MM-DD)');
+      return setError(t('Name, start date and end date are required (YYYY-MM-DD)'));
     }
     setBusy(true);
     try {
@@ -83,12 +84,12 @@ export default function StaffExams({ navigate, session }: ScreenProps) {
         <ErrorBox message={error} />
 
         <View style={styles.statRow}>
-          <IconStat icon="🗓️" label="Upcoming" value={stats?.upcoming} tint={colors.info} soft={colors.infoSoft} />
-          <IconStat icon="✍️" label="Ongoing" value={stats?.ongoing} tint={colors.warn} soft={colors.warnSoft} />
-          <IconStat icon="✅" label="Completed" value={stats?.completed} tint={colors.ok} soft={colors.okSoft} />
+          <IconStat icon="🗓️" label={t('Upcoming')} value={stats?.upcoming} tint={colors.info} soft={colors.infoSoft} />
+          <IconStat icon="✍️" label={t('Ongoing')} value={stats?.ongoing} tint={colors.warn} soft={colors.warnSoft} />
+          <IconStat icon="✅" label={t('Completed')} value={stats?.completed} tint={colors.ok} soft={colors.okSoft} />
         </View>
 
-        {items?.length === 0 && <Empty icon="📝" text="No exams scheduled yet." />}
+        {items?.length === 0 && <Empty icon="📝" text={t('No exams scheduled yet.')} />}
         {items?.map(x => (
           <TouchableOpacity
             key={x.id}
@@ -100,14 +101,14 @@ export default function StaffExams({ navigate, session }: ScreenProps) {
                 <Badge status={x.status} />
               </View>
               <Text style={styles.sub}>
-                🏫 {x.class_name || 'All classes'} · {fmtDate(x.start_date)} – {fmtDate(x.end_date)}
+                🏫 {x.class_name || t('All classes')} · {fmtDate(x.start_date)} – {fmtDate(x.end_date)}
               </Text>
               <View style={styles.footer}>
                 <Text style={{ color: colors.brand, fontSize: 12.5, fontWeight: '700' }}>
-                  📄 {x.paper_count || 0} subject paper{x.paper_count === 1 ? '' : 's'} ›
+                  📄 {x.paper_count === 1 ? t('{n} subject paper', { n: 1 }) : t('{n} subject papers', { n: x.paper_count || 0 })} ›
                 </Text>
                 {!!x.results_published && (
-                  <Text style={{ color: colors.ok, fontSize: 12, fontWeight: '700' }}>Results published</Text>
+                  <Text style={{ color: colors.ok, fontSize: 12, fontWeight: '700' }}>{t('Results published')}</Text>
                 )}
               </View>
             </Card>
@@ -116,18 +117,18 @@ export default function StaffExams({ navigate, session }: ScreenProps) {
       </Screen>
       {isManager && <Fab onPress={() => setCreating(true)} />}
 
-      <Sheet visible={creating} title="Create exam" onClose={() => setCreating(false)}>
-        <Input label="Exam name" placeholder="e.g. Half Yearly Exam" value={form.name} onChangeText={v => setForm({ ...form, name: v })} />
-        <Text style={{ fontSize: 13, fontWeight: '600', color: colors.ink, marginBottom: 6 }}>Class</Text>
+      <Sheet visible={creating} title={t('Create exam')} onClose={() => setCreating(false)}>
+        <Input label={t('Exam name')} placeholder={t('e.g. Half Yearly Exam')} value={form.name} onChangeText={v => setForm({ ...form, name: v })} />
+        <Text style={{ fontSize: 13, fontWeight: '600', color: colors.ink, marginBottom: 6 }}>{t('Class')}</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 6 }}>
-          <Chip label="🏫 All classes" active={form.class_id === 'all'} onPress={() => setForm({ ...form, class_id: 'all' })} />
+          <Chip label={t('🏫 All classes')} active={form.class_id === 'all'} onPress={() => setForm({ ...form, class_id: 'all' })} />
           {classes.map(c => (
             <Chip key={c.id} label={c.name} active={form.class_id === c.id} onPress={() => setForm({ ...form, class_id: c.id })} />
           ))}
         </View>
-        <Input label="Start date (YYYY-MM-DD)" placeholder="2026-08-01" value={form.start_date} onChangeText={v => setForm({ ...form, start_date: v })} />
-        <Input label="End date (YYYY-MM-DD)" placeholder="2026-08-10" value={form.end_date} onChangeText={v => setForm({ ...form, end_date: v })} />
-        <Button label="Create exam" onPress={create} busy={busy} />
+        <Input label={t('Start date (YYYY-MM-DD)')} placeholder="2026-08-01" value={form.start_date} onChangeText={v => setForm({ ...form, start_date: v })} />
+        <Input label={t('End date (YYYY-MM-DD)')} placeholder="2026-08-10" value={form.end_date} onChangeText={v => setForm({ ...form, end_date: v })} />
+        <Button label={t('Create exam')} onPress={create} busy={busy} />
       </Sheet>
     </View>
   );

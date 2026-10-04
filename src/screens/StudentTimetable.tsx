@@ -6,6 +6,7 @@ import { TimetableView } from '../components/Timetable';
 import { Empty, ErrorBox, Loading, Screen } from '../components/ui';
 import { colors } from '../theme';
 import type { TimetableSlot } from '../types';
+import { t } from '../i18n';
 
 export default function StudentTimetable() {
   const [slots, setSlots] = useState<TimetableSlot[] | null>(null);
@@ -33,7 +34,7 @@ export default function StudentTimetable() {
     <Screen refreshing={refreshing} onRefresh={() => load(true)}>
       <ErrorBox message={error} />
       {slots?.length === 0 ? (
-        <Empty icon="🕐" text="Your class timetable is not set yet." />
+        <Empty icon="🕐" text={t('Your class timetable is not set yet.')} />
       ) : (
         <TimetableView
           slots={slots}

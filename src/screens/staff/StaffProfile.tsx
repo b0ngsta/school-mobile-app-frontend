@@ -37,7 +37,7 @@ export default function StaffProfile({ session, onLogout }: ScreenProps) {
           <Text style={styles.name}>{u.full_name}</Text>
           <View style={[styles.rolePill, { backgroundColor: colors.brandSoft }]}>
             <Text style={{ color: colors.brand, fontSize: 12, fontWeight: '700' }}>
-              {ROLE_LABELS[u.user_type] || u.user_type}
+              {t(ROLE_LABELS[u.user_type] || u.user_type)}
             </Text>
           </View>
         </View>

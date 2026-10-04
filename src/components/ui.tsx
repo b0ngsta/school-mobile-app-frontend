@@ -18,7 +18,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import MCIcon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { t } from '../i18n';
+import { statusLabel, t } from '../i18n';
 import { accent, Accent, badge, colors, radius, shadow } from '../theme';
 import type { NavigateFn, RouteParams } from '../types';
 
@@ -128,7 +128,7 @@ export function Hero({ children, style }: CardProps) {
 
 export function Badge({ status, label }: { status?: string; label?: string }) {
   const c = badge(status);
-  const text = label || (status ? t(`status.${status}`) : '');
+  const text = label ? t(label) : status ? statusLabel(status) : '';
   return (
     <View style={[styles.badge, { backgroundColor: c.bg }]}>
       <Text style={[styles.badgeText, { color: c.fg }]}>{String(text).replace(/_/g, ' ')}</Text>
@@ -396,7 +396,7 @@ export function TileGrid({ items, navigate }: { items: GridItem[]; navigate: Nav
         <Tile
           key={it.label}
           icon={it.icon}
-          label={it.label}
+          label={t(it.label)}
           tint={accent(i)}
           onPress={() => navigate(it.route as Parameters<NavigateFn>[0], it.params)}
         />
@@ -432,7 +432,7 @@ export function UpdatesBar({ text, onPress }: { text?: string; onPress?: () => v
           <MCIcon name="bullhorn-outline" size={15} color={colors.brand} />
         </View>
         <Text style={[styles.updatesText, { color: colors.brandDeep }]} numberOfLines={1}>
-          {text || 'No notices yet'}
+          {text || t('dash.noNotices')}
         </Text>
         <MCIcon name="chevron-right" size={18} color={colors.brand} />
       </View>
@@ -440,13 +440,13 @@ export function UpdatesBar({ text, onPress }: { text?: string; onPress?: () => v
   );
 }
 
-export function Empty({ text = 'Nothing here yet', icon = 'folder-open-outline' }: { text?: string; icon?: string }) {
+export function Empty({ text, icon = 'folder-open-outline' }: { text?: string; icon?: string }) {
   return (
     <Card style={{ alignItems: 'center', paddingVertical: 30 }}>
       <View style={[styles.iconBubble, { backgroundColor: colors.page, width: 46, height: 46, borderRadius: 15 }]}>
         <Icon icon={icon} size={23} color={colors.faint} />
       </View>
-      <Text style={{ color: colors.subtle, marginTop: 4 }}>{text}</Text>
+      <Text style={{ color: colors.subtle, marginTop: 4 }}>{text ?? t('Nothing here yet')}</Text>
     </Card>
   );
 }

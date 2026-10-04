@@ -16,6 +16,7 @@ import {
 } from '../../components/ui';
 import { colors } from '../../theme';
 import type { Transaction, TransactionStats } from '../../types';
+import { t } from '../../i18n';
 
 export default function Payments() {
   const [stats, setStats] = useState<TransactionStats | null>(null);
@@ -45,16 +46,16 @@ export default function Payments() {
     <Screen refreshing={refreshing} onRefresh={() => load(true)}>
       <ErrorBox message={error} />
       <View style={styles.statRow}>
-        <IconStat icon="📅" label="Today" value={stats ? inr(stats.today_collection) : '—'} tint={colors.ok} soft={colors.okSoft} />
-        <IconStat icon="🗓️" label="This month" value={stats ? inr(stats.month_collection) : '—'} tint={colors.brand} soft={colors.brandSoft} />
+        <IconStat icon="📅" label={t('Today')} value={stats ? inr(stats.today_collection) : '—'} tint={colors.ok} soft={colors.okSoft} />
+        <IconStat icon="🗓️" label={t('This month')} value={stats ? inr(stats.month_collection) : '—'} tint={colors.brand} soft={colors.brandSoft} />
       </View>
       <View style={styles.statRow}>
-        <IconStat icon="🧾" label="Transactions" value={stats?.total_transactions} tint={colors.info} soft={colors.infoSoft} />
-        <IconStat icon="📈" label="Success rate" value={stats ? `${stats.success_rate}%` : '—'} tint={colors.warn} soft={colors.warnSoft} />
+        <IconStat icon="🧾" label={t('Transactions')} value={stats?.total_transactions} tint={colors.info} soft={colors.infoSoft} />
+        <IconStat icon="📈" label={t('Success rate')} value={stats ? `${stats.success_rate}%` : '—'} tint={colors.warn} soft={colors.warnSoft} />
       </View>
 
-      <SectionTitle>History</SectionTitle>
-      {items?.length === 0 && <Empty icon="💳" text="No transactions yet." />}
+      <SectionTitle>{t('History')}</SectionTitle>
+      {items?.length === 0 && <Empty icon="💳" text={t('No transactions yet.')} />}
       {items?.map(x => (
         <Card key={x.id}>
           <View style={styles.head}>

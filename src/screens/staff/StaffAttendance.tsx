@@ -17,6 +17,7 @@ import {
 import { MANAGER_ROLES } from '../../roles';
 import { ROLE_LABELS, colors } from '../../theme';
 import type { ScreenProps, StaffAttendanceRecord } from '../../types';
+import { t } from '../../i18n';
 
 const fmtT = (t?: string | null): string => (t ? String(t).slice(0, 5) : '—');
 
@@ -67,28 +68,28 @@ export default function StaffAttendance({ session }: ScreenProps) {
 
       {/* today card */}
       <View style={[styles.today, { backgroundColor: colors.brand }]}>
-        <Text style={styles.todayTitle}>Today · {fmtDate(today?.date)}</Text>
+        <Text style={styles.todayTitle}>{t('Today')} · {fmtDate(today?.date)}</Text>
         <View style={{ flexDirection: 'row', marginTop: 10 }}>
           <View style={styles.timeBox}>
-            <Text style={styles.timeLbl}>In Time</Text>
+            <Text style={styles.timeLbl}>{t('In Time')}</Text>
             <Text style={styles.timeVal}>{fmtT(today?.in_time)}</Text>
           </View>
           <View style={styles.timeBox}>
-            <Text style={styles.timeLbl}>Out Time</Text>
+            <Text style={styles.timeLbl}>{t('Out Time')}</Text>
             <Text style={styles.timeVal}>{fmtT(today?.out_time)}</Text>
           </View>
         </View>
         <View style={{ flexDirection: 'row', marginTop: 12 }}>
           {!today?.in_time && (
-            <Button label="✔ Check in" onPress={() => act('/staff-attendance/check-in')} busy={busy}
+            <Button label={t('✔ Check in')} onPress={() => act('/staff-attendance/check-in')} busy={busy}
               kind="soft" style={{ flex: 1 }} />
           )}
           {today?.in_time && !today?.out_time && (
-            <Button label="✔ Check out" onPress={() => act('/staff-attendance/check-out')} busy={busy}
+            <Button label={t('✔ Check out')} onPress={() => act('/staff-attendance/check-out')} busy={busy}
               kind="soft" style={{ flex: 1 }} />
           )}
           {today?.in_time && today?.out_time && (
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>✅ Attendance complete for today</Text>
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>{t('✅ Attendance complete for today')}</Text>
           )}
         </View>
       </View>
@@ -96,8 +97,8 @@ export default function StaffAttendance({ session }: ScreenProps) {
       {isManager && (
         <Segments
           items={[
-            { value: 'mine', label: '📅 My history' },
-            { value: 'all', label: '👥 Staff today' },
+            { value: 'mine', label: `📅 ${t('My history')}` },
+            { value: 'all', label: `👥 ${t('Staff today')}` },
           ]}
           value={tab}
           onChange={setTab}
@@ -106,29 +107,29 @@ export default function StaffAttendance({ session }: ScreenProps) {
 
       {tab === 'mine' ? (
         <>
-          {history?.length === 0 && <Empty icon="📅" text="No attendance records yet." />}
+          {history?.length === 0 && <Empty icon="📅" text={t('No attendance records yet.')} />}
           {history?.map(h => (
             <Card key={h.id} style={styles.row}>
               <Text style={{ flex: 1, fontWeight: '700', color: colors.ink, fontSize: 13.5 }}>
                 {fmtDate(h.date)}
               </Text>
-              <Text style={styles.times}>In {fmtT(h.in_time)}</Text>
-              <Text style={styles.times}>Out {fmtT(h.out_time)}</Text>
+              <Text style={styles.times}>{t('In')} {fmtT(h.in_time)}</Text>
+              <Text style={styles.times}>{t('Out')} {fmtT(h.out_time)}</Text>
             </Card>
           ))}
         </>
       ) : (
         <>
-          {allToday?.length === 0 && <Empty icon="👥" text="Nobody has checked in yet today." />}
+          {allToday?.length === 0 && <Empty icon="👥" text={t('Nobody has checked in yet today.')} />}
           {allToday?.map(a => (
             <Card key={a.id} style={styles.row}>
               <Avatar name={a.full_name} uri={photoUrl(a.photo_path)} size={34} />
               <View style={{ flex: 1, marginLeft: 10 }}>
                 <Text style={{ fontWeight: '700', color: colors.ink, fontSize: 13.5 }}>{a.full_name}</Text>
-                <Text style={{ color: colors.subtle, fontSize: 11.5 }}>{a.user_type ? ROLE_LABELS[a.user_type] : ''}</Text>
+                <Text style={{ color: colors.subtle, fontSize: 11.5 }}>{a.user_type ? t(ROLE_LABELS[a.user_type]) : ''}</Text>
               </View>
-              <Text style={styles.times}>In {fmtT(a.in_time)}</Text>
-              <Text style={styles.times}>Out {fmtT(a.out_time)}</Text>
+              <Text style={styles.times}>{t('In')} {fmtT(a.in_time)}</Text>
+              <Text style={styles.times}>{t('Out')} {fmtT(a.out_time)}</Text>
             </Card>
           ))}
         </>

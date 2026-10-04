@@ -19,6 +19,7 @@ import {
 } from '../../components/ui';
 import { colors } from '../../theme';
 import type { Enquiry, EnquiryStats } from '../../types';
+import { statusLabel, t } from '../../i18n';
 
 const STATUSES = ['new', 'follow_up', 'converted', 'closed'];
 
@@ -49,7 +50,7 @@ export default function Reception() {
 
   const add = async () => {
     if (!form.parent_name.trim() || !form.student_name.trim() || form.contact.length < 5) {
-      return setError('Parent, student and contact are required');
+      return setError(t('Parent, student and contact are required'));
     }
     setBusy(true);
     try {
@@ -89,12 +90,12 @@ export default function Reception() {
       <Screen refreshing={refreshing} onRefresh={() => load(true)}>
         <ErrorBox message={error} />
         <View style={styles.statRow}>
-          <IconStat icon="🛎️" label="Today" value={stats?.today} tint={colors.brand} soft={colors.brandSoft} />
-          <IconStat icon="🆕" label="New" value={stats?.pending} tint={colors.info} soft={colors.infoSoft} />
-          <IconStat icon="✅" label="Converted" value={stats?.converted} tint={colors.ok} soft={colors.okSoft} />
+          <IconStat icon="🛎️" label={t('Today')} value={stats?.today} tint={colors.brand} soft={colors.brandSoft} />
+          <IconStat icon="🆕" label={t('New')} value={stats?.pending} tint={colors.info} soft={colors.infoSoft} />
+          <IconStat icon="✅" label={t('Converted')} value={stats?.converted} tint={colors.ok} soft={colors.okSoft} />
         </View>
 
-        {items?.length === 0 && <Empty icon="🛎️" text="No enquiries yet." />}
+        {items?.length === 0 && <Empty icon="🛎️" text={t('No enquiries yet.')} />}
         {items?.map(e => (
           <Card key={e.id}>
             <View style={styles.head}>
@@ -109,7 +110,7 @@ export default function Reception() {
             <Text style={[styles.sub, { marginTop: 3 }]}>{fmtDate(e.created_at)}</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
               {STATUSES.filter(s => s !== e.status).map(s => (
-                <Chip key={s} label={`→ ${s.replace('_', ' ')}`} onPress={() => setStatus(e, s)} />
+                <Chip key={s} label={`→ ${statusLabel(s)}`} onPress={() => setStatus(e, s)} />
               ))}
             </View>
           </Card>
@@ -117,13 +118,13 @@ export default function Reception() {
       </Screen>
       <Fab onPress={() => setAdding(true)} />
 
-      <Sheet visible={adding} title="New enquiry" onClose={() => setAdding(false)}>
-        <Input label="Parent name" value={form.parent_name} onChangeText={v => setForm({ ...form, parent_name: v })} />
-        <Input label="Student name" value={form.student_name} onChangeText={v => setForm({ ...form, student_name: v })} />
-        <Input label="Class interested" placeholder="e.g. Class 5" value={form.class_interested} onChangeText={v => setForm({ ...form, class_interested: v })} />
-        <Input label="Contact" keyboardType="phone-pad" value={form.contact} onChangeText={v => setForm({ ...form, contact: v })} />
-        <Input label="Notes" multiline style={{ minHeight: 60, textAlignVertical: 'top' }} value={form.notes} onChangeText={v => setForm({ ...form, notes: v })} />
-        <Button label="Add enquiry" onPress={add} busy={busy} />
+      <Sheet visible={adding} title={t('New enquiry')} onClose={() => setAdding(false)}>
+        <Input label={t('Parent name')} value={form.parent_name} onChangeText={v => setForm({ ...form, parent_name: v })} />
+        <Input label={t('Student name')} value={form.student_name} onChangeText={v => setForm({ ...form, student_name: v })} />
+        <Input label={t('Class interested')} placeholder={t('e.g. Class 5')} value={form.class_interested} onChangeText={v => setForm({ ...form, class_interested: v })} />
+        <Input label={t('Contact')} keyboardType="phone-pad" value={form.contact} onChangeText={v => setForm({ ...form, contact: v })} />
+        <Input label={t('Notes')} multiline style={{ minHeight: 60, textAlignVertical: 'top' }} value={form.notes} onChangeText={v => setForm({ ...form, notes: v })} />
+        <Button label={t('Add enquiry')} onPress={add} busy={busy} />
       </Sheet>
     </View>
   );

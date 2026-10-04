@@ -7,6 +7,7 @@ import { api } from '../api';
 import { colors } from '../theme';
 import type { ClassInfo, TimetableSlot } from '../types';
 import { Button, Card, Chip, Empty, ErrorBox, Input, Loading, Sheet } from './ui';
+import { t } from '../i18n';
 
 export const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const DAYS = [0, 1, 2, 3, 4, 5]; // Mon–Sat
@@ -33,7 +34,7 @@ export function TimetableView({ slots, onCellPress, canEdit, renderExtra }: Time
         if (!hasAny && !canEdit) return null;
         return (
           <Card key={day}>
-            <Text style={styles.day}>{DAY_NAMES[day]}</Text>
+            <Text style={styles.day}>{t(DAY_NAMES[day])}</Text>
             {daySlots.map(({ period, slot }) => {
               if (!slot && !canEdit) return null;
               return (
@@ -58,7 +59,7 @@ export function TimetableView({ slots, onCellPress, canEdit, renderExtra }: Time
                       </View>
                     ) : (
                       <Text style={{ flex: 1, marginLeft: 10, color: colors.subtle, fontSize: 12.5 }}>
-                        Free — tap to assign
+                        {t('Free — tap to assign')}
                       </Text>
                     )}
                     {canEdit && <Text style={{ color: colors.subtle, fontSize: 18 }}>›</Text>}
@@ -127,7 +128,7 @@ export function TimetableEditor({ teacherId, canEdit, mine = false }: TimetableE
 
   const save = async () => {
     if (!editing) return;
-    if (!form.classId || !form.sectionId) return setError('Pick a class and section');
+    if (!form.classId || !form.sectionId) return setError(t('Pick a class and section'));
     setBusy(true);
     try {
       await api('/timetable', {
@@ -171,16 +172,16 @@ export function TimetableEditor({ teacherId, canEdit, mine = false }: TimetableE
   return (
     <View>
       <ErrorBox message={error} />
-      {slots?.length === 0 && !canEdit && <Empty icon="calendar-star" text="No timetable set yet." />}
+      {slots?.length === 0 && !canEdit && <Empty icon="calendar-star" text={t('No timetable set yet.')} />}
       <TimetableView slots={slots} canEdit={canEdit} onCellPress={openCell} />
 
       <Sheet
         visible={!!editing}
-        title={editing ? `${DAY_NAMES[editing.day]} · Period ${editing.period}` : ''}
+        title={editing ? `${t(DAY_NAMES[editing.day])} · ${t('Period {n}', { n: editing.period })}` : ''}
         onClose={() => setEditing(null)}>
         {editing && (
           <>
-            <Text style={styles.label}>Class</Text>
+            <Text style={styles.label}>{t('Class')}</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
               {classes.map(c => (
                 <Chip
@@ -193,12 +194,12 @@ export function TimetableEditor({ teacherId, canEdit, mine = false }: TimetableE
             </View>
             {selClass && (
               <>
-                <Text style={styles.label}>Section</Text>
+                <Text style={styles.label}>{t('Section')}</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                   {selClass.sections.map(s => (
                     <Chip
                       key={s.id}
-                      label={`Section ${s.name}`}
+                      label={t('Section {name}', { name: s.name })}
                       active={form.sectionId === s.id}
                       onPress={() => setForm({ ...form, sectionId: s.id })}
                     />
@@ -206,7 +207,7 @@ export function TimetableEditor({ teacherId, canEdit, mine = false }: TimetableE
                 </View>
                 {selClass.subjects?.length ? (
                   <>
-                    <Text style={styles.label}>Subject</Text>
+                    <Text style={styles.label}>{t('Subject')}</Text>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                       {selClass.subjects.map(s => (
                         <Chip key={s} label={s} active={form.subject === s} onPress={() => setForm({ ...form, subject: s })} />
@@ -216,10 +217,10 @@ export function TimetableEditor({ teacherId, canEdit, mine = false }: TimetableE
                 ) : null}
               </>
             )}
-            <Input label="Subject (or type your own)" placeholder="e.g. Mathematics" value={form.subject} onChangeText={v => setForm({ ...form, subject: v })} />
-            <Button label={editing.slot ? 'Save changes' : 'Assign period'} onPress={save} busy={busy} />
+            <Input label={t('Subject (or type your own)')} placeholder={t('e.g. Mathematics')} value={form.subject} onChangeText={v => setForm({ ...form, subject: v })} />
+            <Button label={editing.slot ? t('Save changes') : t('Assign period')} onPress={save} busy={busy} />
             {editing.slot && (
-              <Button label="Clear this period" kind="danger" onPress={clear} busy={busy} style={{ marginTop: 8 }} />
+              <Button label={t('Clear this period')} kind="danger" onPress={clear} busy={busy} style={{ marginTop: 8 }} />
             )}
           </>
         )}

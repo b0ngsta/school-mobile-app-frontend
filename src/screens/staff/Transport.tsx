@@ -19,6 +19,7 @@ import {
 import { MANAGER_ROLES } from '../../roles';
 import { colors } from '../../theme';
 import type { ScreenProps, Vehicle, VehicleStats } from '../../types';
+import { t } from '../../i18n';
 
 const EMPTY = { vehicle_no: '', driver_name: '', driver_phone: '', route_name: '', capacity: '', status: 'active' };
 
@@ -50,7 +51,7 @@ export default function Transport({ session }: ScreenProps) {
   const save = async () => {
     if (!editing) return;
     const f = editing.form;
-    if (!f.vehicle_no.trim() || !f.driver_name.trim()) return setError('Vehicle no and driver name are required');
+    if (!f.vehicle_no.trim() || !f.driver_name.trim()) return setError(t('Vehicle no and driver name are required'));
     setBusy(true);
     try {
       const body = {
@@ -79,12 +80,12 @@ export default function Transport({ session }: ScreenProps) {
       <Screen refreshing={refreshing} onRefresh={() => load(true)}>
         <ErrorBox message={error} />
         <View style={styles.statRow}>
-          <IconStat icon="🚌" label="Vehicles" value={stats?.total} tint={colors.brand} soft={colors.brandSoft} />
-          <IconStat icon="🟢" label="Active" value={stats?.active} tint={colors.ok} soft={colors.okSoft} />
-          <IconStat icon="🗺️" label="Routes" value={stats?.routes} tint={colors.info} soft={colors.infoSoft} />
+          <IconStat icon="🚌" label={t('Vehicles')} value={stats?.total} tint={colors.brand} soft={colors.brandSoft} />
+          <IconStat icon="🟢" label={t('Active')} value={stats?.active} tint={colors.ok} soft={colors.okSoft} />
+          <IconStat icon="🗺️" label={t('Routes')} value={stats?.routes} tint={colors.info} soft={colors.infoSoft} />
         </View>
 
-        {items?.length === 0 && <Empty icon="🚌" text="No vehicles yet." />}
+        {items?.length === 0 && <Empty icon="🚌" text={t('No vehicles yet.')} />}
         {items?.map(v => (
           <Card key={v.id}>
             <View style={styles.head}>
@@ -92,10 +93,10 @@ export default function Transport({ session }: ScreenProps) {
               <Badge status={v.status} />
             </View>
             <Text style={styles.sub}>🧑‍✈️ {v.driver_name}{v.driver_phone ? ` · 📞 ${v.driver_phone}` : ''}</Text>
-            <Text style={styles.sub}>🗺️ {v.route_name || 'No route set'}{v.capacity ? ` · 🪑 ${v.capacity} seats` : ''}</Text>
+            <Text style={styles.sub}>🗺️ {v.route_name || t('No route set')}{v.capacity ? ` · 🪑 ${t('{n} seats', { n: v.capacity })}` : ''}</Text>
             {canEdit && (
               <Button
-                label="Edit"
+                label={t('Edit')}
                 kind="soft"
                 small
                 style={{ marginTop: 10, alignSelf: 'flex-start' }}
@@ -119,19 +120,19 @@ export default function Transport({ session }: ScreenProps) {
       </Screen>
       {canEdit && <Fab onPress={() => setEditing({ form: { ...EMPTY } })} />}
 
-      <Sheet visible={!!editing} title={editing?.id ? 'Edit vehicle' : 'Add vehicle'} onClose={() => setEditing(null)}>
+      <Sheet visible={!!editing} title={editing?.id ? t('Edit vehicle') : t('Add vehicle')} onClose={() => setEditing(null)}>
         {editing && (
           <>
-            <Input label="Vehicle number" placeholder="e.g. GJ01AB1234" value={editing.form.vehicle_no} onChangeText={v => setEditing({ ...editing, form: { ...editing.form, vehicle_no: v } })} />
-            <Input label="Driver name" value={editing.form.driver_name} onChangeText={v => setEditing({ ...editing, form: { ...editing.form, driver_name: v } })} />
-            <Input label="Driver phone" keyboardType="phone-pad" value={editing.form.driver_phone} onChangeText={v => setEditing({ ...editing, form: { ...editing.form, driver_phone: v } })} />
-            <Input label="Route" placeholder="e.g. Route 1 — City Centre" value={editing.form.route_name} onChangeText={v => setEditing({ ...editing, form: { ...editing.form, route_name: v } })} />
-            <Input label="Capacity" keyboardType="numeric" value={editing.form.capacity} onChangeText={v => setEditing({ ...editing, form: { ...editing.form, capacity: v } })} />
+            <Input label={t('Vehicle number')} placeholder={t('e.g. GJ01AB1234')} value={editing.form.vehicle_no} onChangeText={v => setEditing({ ...editing, form: { ...editing.form, vehicle_no: v } })} />
+            <Input label={t('Driver name')} value={editing.form.driver_name} onChangeText={v => setEditing({ ...editing, form: { ...editing.form, driver_name: v } })} />
+            <Input label={t('Driver phone')} keyboardType="phone-pad" value={editing.form.driver_phone} onChangeText={v => setEditing({ ...editing, form: { ...editing.form, driver_phone: v } })} />
+            <Input label={t('Route')} placeholder={t('e.g. Route 1 — City Centre')} value={editing.form.route_name} onChangeText={v => setEditing({ ...editing, form: { ...editing.form, route_name: v } })} />
+            <Input label={t('Capacity')} keyboardType="numeric" value={editing.form.capacity} onChangeText={v => setEditing({ ...editing, form: { ...editing.form, capacity: v } })} />
             <View style={{ flexDirection: 'row', marginBottom: 4 }}>
-              <Chip label="Active" tone="ok" active={editing.form.status === 'active'} onPress={() => setEditing({ ...editing, form: { ...editing.form, status: 'active' } })} />
-              <Chip label="Maintenance" active={editing.form.status === 'maintenance'} onPress={() => setEditing({ ...editing, form: { ...editing.form, status: 'maintenance' } })} />
+              <Chip label={t('Active')} tone="ok" active={editing.form.status === 'active'} onPress={() => setEditing({ ...editing, form: { ...editing.form, status: 'active' } })} />
+              <Chip label={t('Maintenance')} active={editing.form.status === 'maintenance'} onPress={() => setEditing({ ...editing, form: { ...editing.form, status: 'maintenance' } })} />
             </View>
-            <Button label={editing.id ? 'Save changes' : 'Add vehicle'} onPress={save} busy={busy} />
+            <Button label={editing.id ? t('Save changes') : t('Add vehicle')} onPress={save} busy={busy} />
           </>
         )}
       </Sheet>

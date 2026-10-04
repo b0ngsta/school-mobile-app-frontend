@@ -51,14 +51,14 @@ export default function Login({ onLogin }: LoginProps) {
         {LANGS.map(l => (
           <TouchableOpacity
             key={l.code}
-            style={[styles.langBtn, lang === l.code && styles.langBtnActive]}
+            style={[styles.langBtn, lang === l.code && { backgroundColor: colors.brand }]}
             onPress={() => setLang(l.code)}>
             <Text style={[styles.langText, lang === l.code && styles.langTextActive]}>{l.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <View style={[styles.logo, shadow.card]}>
+      <View style={[styles.logo, { backgroundColor: colors.brand }, shadow.card]}>
         <MCIcon name="school-outline" size={30} color="#fff" />
       </View>
       <Text style={styles.title}>EduManage</Text>
@@ -98,7 +98,7 @@ export default function Login({ onLogin }: LoginProps) {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.btn} onPress={submit} disabled={busy} activeOpacity={0.8}>
+        <TouchableOpacity style={[styles.btn, { backgroundColor: colors.brand }]} onPress={submit} disabled={busy} activeOpacity={0.8}>
           {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>{t('login.signin')}</Text>}
         </TouchableOpacity>
       </View>
@@ -116,14 +116,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     marginHorizontal: 4,
   },
-  langBtnActive: { backgroundColor: colors.brand },
   langText: { fontSize: 13, fontWeight: '600', color: colors.subtle },
   langTextActive: { color: '#fff' },
   logo: {
     width: 64,
     height: 64,
     borderRadius: 20,
-    backgroundColor: colors.brand,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -150,7 +148,6 @@ const styles = StyleSheet.create({
   inputIcon: { marginRight: 8 },
   input: { flex: 1, paddingVertical: 12, fontSize: 15, color: colors.ink },
   btn: {
-    backgroundColor: colors.brand,
     borderRadius: radius.input,
     paddingVertical: 14,
     alignItems: 'center',

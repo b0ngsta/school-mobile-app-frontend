@@ -1,7 +1,7 @@
 // Staff users (managers): list + add staff accounts (any role).
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { api, photoUrl } from '../../api';
+import { api, peek, photoUrl } from '../../api';
 import {
   Avatar,
   Button,
@@ -11,8 +11,9 @@ import {
   ErrorBox,
   Fab,
   Input,
-  Loading,
+  ListSkeleton,
   Screen,
+  ScreenSkeleton,
   Sheet,
 } from '../../components/ui';
 import { ROLE_LABELS, colors } from '../../theme';
@@ -22,7 +23,7 @@ import { t } from '../../i18n';
 const CREATABLE: Role[] = ['teacher', 'coordinator', 'driver', 'sub_admin', 'principal', 'admin'];
 
 export default function Users() {
-  const [items, setItems] = useState<StaffUser[] | null>(null);
+  const [items, setItems] = useState<StaffUser[] | null>(() => peek<StaffUser[]>('/users'));
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -70,7 +71,13 @@ export default function Users() {
     }
   };
 
-  if (!items && !error) return <Loading />;
+  if (!items && !error) {
+    return (
+      <ScreenSkeleton>
+        <ListSkeleton avatar={42} badge="right" lines={1} count={6} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>

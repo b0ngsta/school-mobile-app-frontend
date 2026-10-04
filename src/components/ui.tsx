@@ -1,9 +1,12 @@
 // Reusable design-system pieces — "Option A" redesign.
 // NOTE: role themes mutate `colors.brand*` at login — always read brand
 // colors inline in JSX, never freeze them inside StyleSheet.create.
-import React, { ReactNode } from 'react';
+import React, { ReactElement, ReactNode, createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
+  FlatList,
   Image,
   Modal,
   RefreshControl,
@@ -18,6 +21,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import MCIcon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useReduceMotion } from '../hooks';
 import { statusLabel, t } from '../i18n';
 import { accent, Accent, badge, colors, radius, shadow } from '../theme';
 import type { NavigateFn, RouteParams } from '../types';
@@ -105,6 +109,59 @@ export function Screen({ children, refreshing, onRefresh, padded = true }: Scree
       }>
       {children}
     </ScrollView>
+  );
+}
+
+interface ListScreenProps<T> {
+  /** The list rows; null/undefined renders header (and footer) only. */
+  data: readonly T[] | null | undefined;
+  renderItem: (item: T) => ReactElement | null;
+  keyExtractor: (item: T) => string | number;
+  /** Everything above the rows (stats, filters, banners…). */
+  header?: ReactElement | null;
+  /** Everything below the rows (e.g. a save button). */
+  footer?: ReactElement | null;
+  /** Shown instead of the rows when `data` is an empty array. */
+  empty?: ReactElement | null;
+  refreshing?: boolean;
+  onRefresh?: () => void;
+}
+
+/**
+ * Same look as <Screen>, but the rows are virtualised (FlatList): only what
+ * is on/near screen is rendered, so long lists (fees, payments, students…)
+ * open fast and scroll smoothly.
+ */
+export function ListScreen<T>({
+  data,
+  renderItem,
+  keyExtractor,
+  header,
+  footer,
+  empty,
+  refreshing,
+  onRefresh,
+}: ListScreenProps<T>) {
+  return (
+    <FlatList
+      data={data ?? []}
+      renderItem={({ item }) => renderItem(item)}
+      keyExtractor={item => String(keyExtractor(item))}
+      ListHeaderComponent={header}
+      ListFooterComponent={footer}
+      ListEmptyComponent={data ? empty : null}
+      style={{ flex: 1, backgroundColor: colors.page }}
+      contentContainerStyle={styles.pad}
+      keyboardShouldPersistTaps="handled"
+      initialNumToRender={10}
+      maxToRenderPerBatch={10}
+      windowSize={11}
+      refreshControl={
+        onRefresh ? (
+          <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} colors={[colors.brand]} tintColor={colors.brand} />
+        ) : undefined
+      }
+    />
   );
 }
 
@@ -459,6 +516,202 @@ export function Loading() {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Skeletons — page-shaped placeholders while a screen loads, so the  */
+/* layout is visible right away (and during screen transitions).      */
+/* ------------------------------------------------------------------ */
+type PulseOpacity = Animated.AnimatedInterpolation<number> | number;
+const SkeletonPulse = createContext<PulseOpacity>(1);
+
+/** Wraps a skeleton layout; every <Bone> inside pulses in sync. */
+export function Skeleton({ children }: { children: ReactNode }) {
+  const reduceMotion = useReduceMotion();
+  const pulse = useRef(new Animated.Value(0)).current;
+  const opacity = useMemo(() => pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 0.45] }), [pulse]);
+
+  useEffect(() => {
+    if (reduceMotion) return undefined;
+    const half = (toValue: number) =>
+      Animated.timing(pulse, { toValue, duration: 750, easing: Easing.inOut(Easing.ease), useNativeDriver: true });
+    const loop = Animated.loop(Animated.sequence([half(1), half(0)]));
+    loop.start();
+    return () => loop.stop();
+  }, [pulse, reduceMotion]);
+
+  return (
+    <SkeletonPulse.Provider value={reduceMotion ? 1 : opacity}>
+      <View accessible accessibilityRole="progressbar" accessibilityLabel={t('Loading…')}>
+        {children}
+      </View>
+    </SkeletonPulse.Provider>
+  );
+}
+
+interface BoneProps {
+  width?: ViewStyle['width'];
+  /** Omit when the style sizes the bone (e.g. aspectRatio). */
+  height?: number;
+  radius?: number;
+  /** On a brand-coloured surface (hero cards): a translucent white bone. */
+  onBrand?: boolean;
+  style?: StyleProp<ViewStyle>;
+}
+
+/** One placeholder block (a line of text, an avatar, an icon…). */
+export function Bone({ width = '100%', height, radius: r = 6, onBrand = false, style }: BoneProps) {
+  const opacity = useContext(SkeletonPulse);
+  return (
+    <Animated.View
+      style={[
+        { width, height, borderRadius: r, backgroundColor: onBrand ? 'rgba(255,255,255,0.24)' : '#E6E8F0' },
+        style,
+        { opacity },
+      ]}
+    />
+  );
+}
+
+/** Placeholder for <TileGrid>: same tiles, bones instead of icon + label. */
+export function TileGridSkeleton({ count }: { count: number }) {
+  return (
+    <View style={styles.tileGrid}>
+      {Array.from({ length: count }, (_, i) => (
+        <View key={i} style={styles.tileWrap}>
+          <View style={[styles.tile, shadow.card]}>
+            <Bone width={48} height={48} radius={16} style={{ marginBottom: 9 }} />
+            <Bone width="62%" height={9} radius={4} style={{ marginVertical: 2 }} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** A whole loading page: the usual padded <Screen> with pulsing bones. */
+export function ScreenSkeleton({ children, padded = true }: { children: ReactNode; padded?: boolean }) {
+  return (
+    <Screen padded={padded}>
+      <Skeleton>{children}</Skeleton>
+    </Screen>
+  );
+}
+
+/** Placeholder for a <SectionTitle>. */
+export function SectionTitleSkeleton({ width = 110 }: { width?: number }) {
+  return <Bone width={width} height={13} style={styles.sectionBone} />;
+}
+
+/** Placeholder for <Segments> / a row of filter chips. */
+export function ChipsSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <View style={styles.chipsBone}>
+      {Array.from({ length: count }, (_, i) => (
+        <Bone key={i} width={[86, 74, 96, 66][i % 4]} height={35} radius={radius.pill} style={styles.chipBone} />
+      ))}
+    </View>
+  );
+}
+
+/** Placeholder for a row of <IconStat> cards. */
+export function StatTilesSkeleton({ count }: { count: number }) {
+  return (
+    <View style={styles.statTilesBone}>
+      {Array.from({ length: count }, (_, i) => (
+        <Card key={i} style={styles.iconStat}>
+          <Bone width={38} height={38} radius={12} style={{ marginBottom: 8 }} />
+          <Bone width={64} height={20} />
+          <Bone width={54} height={10} style={{ marginTop: 6 }} />
+        </Card>
+      ))}
+    </View>
+  );
+}
+
+/** Placeholder for a brand <Hero> banner (title + sub lines, optional extras). */
+export function HeroSkeleton({ lines = 1, children }: { lines?: number; children?: ReactNode }) {
+  return (
+    <View style={[styles.hero, { backgroundColor: colors.brand }]}>
+      <View style={[styles.heroBubble, { top: -34, right: -26, width: 140, height: 140 }]} />
+      <View style={[styles.heroBubble, { bottom: -46, left: -34, width: 110, height: 110 }]} />
+      <Bone onBrand width="55%" height={18} />
+      {Array.from({ length: lines }, (_, i) => (
+        <Bone key={i} onBrand width={i % 2 ? '35%' : '45%'} height={11} style={{ marginTop: 9 }} />
+      ))}
+      {children}
+    </View>
+  );
+}
+
+/** Placeholder for a card of <Row>s (label on the left, value or badge on the right). */
+export function RowsSkeleton({ count, badge = false }: { count: number; badge?: boolean }) {
+  return (
+    <Card>
+      {Array.from({ length: count }, (_, i) => (
+        <View key={i} style={[styles.row, i === count - 1 && { borderBottomWidth: 0 }]}>
+          <Bone width={[110, 92, 124, 100][i % 4]} height={11} style={{ marginVertical: 4 }} />
+          {badge ? <Bone width={64} height={22} radius={radius.pill} /> : <Bone width={70} height={11} />}
+        </View>
+      ))}
+    </Card>
+  );
+}
+
+const TITLE_WIDTHS = ['58%', '46%', '66%', '52%'] as const;
+const LINE_WIDTHS = ['82%', '64%', '48%'] as const;
+
+interface CardSkeletonProps {
+  /** Varies the bone widths a little from card to card. */
+  index?: number;
+  /** Leading round avatar of this size. */
+  avatar?: number;
+  /** Leading rounded icon bubble. */
+  icon?: boolean;
+  /** Status pill: beside the title, or under the text. */
+  badge?: 'right' | 'below';
+  /** Text lines under the title. */
+  lines?: number;
+  /** A filled block under the text (result box, table…) of this height. */
+  block?: number;
+  /** A small button at the bottom. */
+  action?: boolean;
+}
+
+/** Placeholder for one list card: [avatar | icon] title [badge], lines, block, button. */
+export function CardSkeleton({ index = 0, avatar, icon, badge, lines = 1, block, action }: CardSkeletonProps) {
+  const leading = avatar || icon;
+  const textLines = Array.from({ length: lines }, (_, i) => (
+    <Bone key={i} width={LINE_WIDTHS[(i + index) % LINE_WIDTHS.length]} height={10} style={{ marginTop: 9 }} />
+  ));
+  return (
+    <Card>
+      <View style={styles.cardBoneHead}>
+        {avatar ? <Bone width={avatar} height={avatar} radius={avatar / 2} style={styles.cardBoneLead} /> : null}
+        {icon ? <Bone width={40} height={40} radius={12} style={styles.cardBoneLead} /> : null}
+        <View style={{ flex: 1 }}>
+          <Bone width={TITLE_WIDTHS[index % TITLE_WIDTHS.length]} height={14} />
+          {leading ? textLines : null}
+        </View>
+        {badge === 'right' ? <Bone width={64} height={22} radius={radius.pill} style={{ marginLeft: 10 }} /> : null}
+      </View>
+      {leading ? null : textLines}
+      {block ? <Bone height={block} radius={10} style={{ marginTop: 12 }} /> : null}
+      {badge === 'below' ? <Bone width={70} height={22} radius={radius.pill} style={{ marginTop: 12 }} /> : null}
+      {action ? <Bone width={132} height={32} radius={radius.input} style={{ marginTop: 12 }} /> : null}
+    </Card>
+  );
+}
+
+/** Placeholder for a list of cards (see CardSkeleton for the shape options). */
+export function ListSkeleton({ count = 4, ...card }: CardSkeletonProps & { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }, (_, i) => (
+        <CardSkeleton key={i} index={i} {...card} />
+      ))}
+    </>
+  );
+}
+
 export function ErrorBox({ message }: { message?: string | null }) {
   if (!message) return null;
   return (
@@ -508,7 +761,20 @@ export const fmtDate = (d?: string | Date | null): string => {
   return `${dt.getDate()} ${months[dt.getMonth()]} ${dt.getFullYear()}`;
 };
 
-export const inr = (n?: number | null): string => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+// One shared formatter: Number#toLocaleString builds a new Intl formatter on
+// every call, which is slow on Hermes when a list renders many amounts.
+const INR_FORMAT: Intl.NumberFormat | null = (() => {
+  try {
+    return new Intl.NumberFormat('en-IN');
+  } catch {
+    return null;
+  }
+})();
+
+export const inr = (n?: number | null): string => {
+  const v = Number(n || 0);
+  return `₹${INR_FORMAT ? INR_FORMAT.format(v) : v.toLocaleString('en-IN')}`;
+};
 
 const styles = StyleSheet.create({
   pad: { padding: 16, paddingBottom: 90 },
@@ -653,6 +919,13 @@ const styles = StyleSheet.create({
   },
   tileLabel: { fontSize: 11.5, fontWeight: '700', color: colors.ink },
   tileGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -5 },
+  // skeleton placeholders (sizes mirror the real components above)
+  sectionBone: { marginTop: 9, marginBottom: 13 },
+  chipsBone: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12 },
+  chipBone: { marginRight: 8, marginBottom: 8 },
+  statTilesBone: { flexDirection: 'row', marginHorizontal: -4, marginBottom: 4 },
+  cardBoneHead: { flexDirection: 'row', alignItems: 'center' },
+  cardBoneLead: { marginRight: 12 },
   miniStat: {
     flex: 1,
     backgroundColor: colors.page,

@@ -1,15 +1,15 @@
 // Student view: their section's weekly timetable with teacher names.
 import React, { useCallback, useEffect, useState } from 'react';
 import { Text } from 'react-native';
-import { api } from '../api';
-import { TimetableView } from '../components/Timetable';
-import { Empty, ErrorBox, Loading, Screen } from '../components/ui';
+import { api, peek } from '../api';
+import { TimetableSkeleton, TimetableView } from '../components/Timetable';
+import { Empty, ErrorBox, Screen } from '../components/ui';
 import { colors } from '../theme';
 import type { TimetableSlot } from '../types';
 import { t } from '../i18n';
 
 export default function StudentTimetable() {
-  const [slots, setSlots] = useState<TimetableSlot[] | null>(null);
+  const [slots, setSlots] = useState<TimetableSlot[] | null>(() => peek<TimetableSlot[]>('/student/timetable'));
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -28,7 +28,13 @@ export default function StudentTimetable() {
     load();
   }, [load]);
 
-  if (!slots && !error) return <Loading />;
+  if (!slots && !error) {
+    return (
+      <Screen>
+        <TimetableSkeleton />
+      </Screen>
+    );
+  }
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => load(true)}>

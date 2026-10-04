@@ -5,13 +5,17 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { api } from '../../api';
 import {
   Badge,
+  Bone,
   Button,
   Card,
   Empty,
   ErrorBox,
-  Loading,
+  HeroSkeleton,
+  ListSkeleton,
   Screen,
+  ScreenSkeleton,
   SectionTitle,
+  SectionTitleSkeleton,
   fmtDate,
 } from '../../components/ui';
 import { MANAGER_ROLES } from '../../roles';
@@ -58,7 +62,16 @@ export default function StaffExamDetail({ navigate, params, session }: ScreenPro
     }
   };
 
-  if (!exam && !error) return <Loading />;
+  if (!exam && !error) {
+    return (
+      <ScreenSkeleton>
+        <HeroSkeleton lines={2} />
+        <Bone height={44} radius={14} style={{ marginBottom: 12 }} />
+        <SectionTitleSkeleton width={200} />
+        <ListSkeleton icon badge="right" lines={1} count={3} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => load(true)}>

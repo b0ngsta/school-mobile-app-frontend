@@ -6,7 +6,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { api } from '../api';
 import { colors } from '../theme';
 import type { ClassInfo, TimetableSlot } from '../types';
-import { Button, Card, Chip, Empty, ErrorBox, Input, Loading, Sheet } from './ui';
+import { Bone, Button, Card, Chip, Empty, ErrorBox, Input, Sheet, Skeleton } from './ui';
 import { t } from '../i18n';
 
 export const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -166,7 +166,7 @@ export function TimetableEditor({ teacherId, canEdit, mine = false }: TimetableE
     }
   };
 
-  if (!slots && !error) return <Loading />;
+  if (!slots && !error) return <TimetableSkeleton />;
   const selClass = classes.find(c => c.id === form.classId);
 
   return (
@@ -226,6 +226,30 @@ export function TimetableEditor({ teacherId, canEdit, mine = false }: TimetableE
         )}
       </Sheet>
     </View>
+  );
+}
+
+const SLOT_WIDTHS = ['62%', '50%', '70%'] as const;
+
+/** Placeholder for the timetable while it loads: a few day cards of periods. */
+export function TimetableSkeleton({ days = 3 }: { days?: number }) {
+  return (
+    <Skeleton>
+      {Array.from({ length: days }, (_, d) => (
+        <Card key={d}>
+          <Bone width={96} height={14} style={{ marginBottom: 10 }} />
+          {[0, 1, 2].map(p => (
+            <View key={p} style={styles.row}>
+              <Bone width={38} height={26} radius={9} />
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Bone width={SLOT_WIDTHS[(p + d) % SLOT_WIDTHS.length]} height={12} />
+                <Bone width="38%" height={9} style={{ marginTop: 6 }} />
+              </View>
+            </View>
+          ))}
+        </Card>
+      ))}
+    </Skeleton>
   );
 }
 

@@ -1,18 +1,20 @@
 // Leave requests — staff submit + track; managers also review all requests.
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { api, photoUrl } from '../../api';
+import { api, peek, photoUrl } from '../../api';
 import {
   Avatar,
   Badge,
   Button,
   Card,
+  ChipsSkeleton,
   Empty,
   ErrorBox,
   Fab,
   Input,
-  Loading,
+  ListSkeleton,
   Screen,
+  ScreenSkeleton,
   Segments,
   Sheet,
   fmtDate,
@@ -25,7 +27,7 @@ import { t } from '../../i18n';
 export default function Leaves({ session }: ScreenProps) {
   const isManager = MANAGER_ROLES.includes(session.user_type);
   const [tab, setTab] = useState(isManager ? 'all' : 'mine');
-  const [items, setItems] = useState<LeaveRequest[] | null>(null);
+  const [items, setItems] = useState<LeaveRequest[] | null>(() => peek<LeaveRequest[]>(isManager ? '/leaves' : '/leaves/mine'));
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [requesting, setRequesting] = useState(false);
@@ -86,7 +88,14 @@ export default function Leaves({ session }: ScreenProps) {
     }
   };
 
-  if (!items && !error) return <Loading />;
+  if (!items && !error) {
+    return (
+      <ScreenSkeleton>
+        {isManager && <ChipsSkeleton count={2} />}
+        <ListSkeleton avatar={34} badge="right" lines={2} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>

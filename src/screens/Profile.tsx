@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { logout, photoUrl } from '../api';
-import { Avatar, Card, ErrorBox, Loading, Screen, SectionTitle, fmtDate } from '../components/ui';
+import { Avatar, Bone, Card, ErrorBox, Screen, SectionTitle, Skeleton, fmtDate } from '../components/ui';
 import { useApi, useI18n } from '../hooks';
 import { LANGS } from '../i18n';
 import { colors, radius } from '../theme';
@@ -17,7 +17,7 @@ const Field = ({ label, value }: { label: string; value?: string | null }) => (
 export default function Profile({ onLogout }: ScreenProps) {
   const { t, lang, setLang } = useI18n();
   const { data: p, error, loading, refreshing, refresh } = useApi<StudentProfile>('/student/me');
-  if (loading) return <Loading />;
+  if (loading) return <ProfileSkeleton />;
 
   const confirmLogout = () =>
     Alert.alert(t('profile.logout'), t('profile.logoutConfirm'), [
@@ -63,9 +63,9 @@ export default function Profile({ onLogout }: ScreenProps) {
         {LANGS.map(l => (
           <TouchableOpacity
             key={l.code}
-            style={[styles.langBtn, lang === l.code && styles.langBtnActive]}
+            style={[styles.langBtn, lang === l.code && { backgroundColor: colors.brandSoft, borderColor: colors.brand }]}
             onPress={() => setLang(l.code)}>
-            <Text style={[styles.langText, lang === l.code && styles.langTextActive]}>{l.label}</Text>
+            <Text style={[styles.langText, lang === l.code && { color: colors.brand }]}>{l.label}</Text>
           </TouchableOpacity>
         ))}
       </Card>
@@ -77,8 +77,48 @@ export default function Profile({ onLogout }: ScreenProps) {
   );
 }
 
+// Shown while the profile loads: the same cards with placeholder bones, so
+// the page (and the screen transition into it) is visible immediately.
+function ProfileSkeleton() {
+  const section = (rows: number, key: string) => (
+    <React.Fragment key={key}>
+      <Bone width={72} height={12} style={styles.titleBone} />
+      <Card>
+        {Array.from({ length: rows }, (_, i) => (
+          <View key={i} style={[styles.field, i === rows - 1 && styles.lastField]}>
+            <Bone width={84} height={10} style={styles.fieldBone} />
+            <Bone width={112} height={10} style={styles.fieldBone} />
+          </View>
+        ))}
+      </Card>
+    </React.Fragment>
+  );
+  return (
+    <Screen>
+      <Skeleton>
+        <Card style={styles.hero}>
+          <Bone width={64} height={64} radius={32} />
+          <Bone width={140} height={16} style={{ marginTop: 12 }} />
+          <Bone width={100} height={10} style={{ marginTop: 8 }} />
+        </Card>
+        {section(5, 'details')}
+        {section(4, 'family')}
+        <Bone width={72} height={12} style={styles.titleBone} />
+        <Card style={styles.langCard}>
+          <Bone height={40} radius={radius.input} style={styles.langBone} />
+          <Bone height={40} radius={radius.input} style={styles.langBone} />
+        </Card>
+      </Skeleton>
+    </Screen>
+  );
+}
+
 const styles = StyleSheet.create({
   hero: { alignItems: 'center', paddingVertical: 22 },
+  titleBone: { marginTop: 9, marginBottom: 13 },
+  fieldBone: { marginVertical: 3.5 },
+  lastField: { borderBottomWidth: 0 },
+  langBone: { flex: 1, width: undefined, marginHorizontal: 4 },
   name: { fontSize: 18, fontWeight: '800', color: colors.ink, marginTop: 10 },
   meta: { fontSize: 12, color: colors.subtle, marginTop: 2 },
   field: {
@@ -100,9 +140,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 4,
   },
-  langBtnActive: { backgroundColor: colors.brandSoft, borderColor: colors.brand },
   langText: { fontSize: 14, fontWeight: '600', color: colors.subtle },
-  langTextActive: { color: colors.brand },
   logout: {
     backgroundColor: colors.dangerSoft,
     borderRadius: radius.input,

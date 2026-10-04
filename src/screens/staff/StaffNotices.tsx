@@ -1,7 +1,7 @@
 // Notices for staff & drivers. Admin/principal can post + delete.
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { api } from '../../api';
+import { api, peek } from '../../api';
 import {
   Button,
   Card,
@@ -9,8 +9,9 @@ import {
   ErrorBox,
   Fab,
   Input,
-  Loading,
+  ListSkeleton,
   Screen,
+  ScreenSkeleton,
   Sheet,
   fmtDate,
 } from '../../components/ui';
@@ -20,7 +21,7 @@ import { t } from '../../i18n';
 
 export default function StaffNotices({ session }: ScreenProps) {
   const canPost = ['admin', 'principal'].includes(session.user_type);
-  const [items, setItems] = useState<Notice[] | null>(null);
+  const [items, setItems] = useState<Notice[] | null>(() => peek<Notice[]>('/notices'));
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [composing, setComposing] = useState(false);
@@ -68,7 +69,13 @@ export default function StaffNotices({ session }: ScreenProps) {
     }
   };
 
-  if (!items && !error) return <Loading />;
+  if (!items && !error) {
+    return (
+      <ScreenSkeleton>
+        <ListSkeleton lines={3} count={3} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>

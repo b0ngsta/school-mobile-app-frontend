@@ -1,21 +1,26 @@
 // Fees overview for managers: stats, pending claims banner, fee records
 // with filter + mark-paid.
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { api } from '../../api';
+import { api, peek } from '../../api';
 import {
   Badge,
   Button,
   Card,
+  CardSkeleton,
   Chip,
+  ChipsSkeleton,
   Empty,
   ErrorBox,
   IconStat,
-  Loading,
-  Screen,
+  ListScreen,
+  ListSkeleton,
+  ScreenSkeleton,
   SectionTitle,
+  SectionTitleSkeleton,
   Segments,
   Sheet,
+  StatTilesSkeleton,
   fmtDate,
   inr,
 } from '../../components/ui';
@@ -26,9 +31,9 @@ import { t } from '../../i18n';
 const METHODS = ['cash', 'card', 'upi', 'netbanking', 'wallet'];
 
 export default function FeesAdmin({ navigate }: ScreenProps) {
-  const [stats, setStats] = useState<FeeStats | null>(null);
-  const [claimStats, setClaimStats] = useState<ClaimStats | null>(null);
-  const [items, setItems] = useState<AdminFee[] | null>(null);
+  const [stats, setStats] = useState<FeeStats | null>(() => peek<FeeStats>('/fees/stats'));
+  const [claimStats, setClaimStats] = useState<ClaimStats | null>(() => peek<ClaimStats>('/fees/claims/stats'));
+  const [items, setItems] = useState<AdminFee[] | null>(() => peek<AdminFee[]>('/fees'));
   const [filter, setFilter] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -39,8 +44,12 @@ export default function FeesAdmin({ navigate }: ScreenProps) {
   const load = useCallback(async (r = false) => {
     r && setRefreshing(true);
     try {
-      setStats(await api('/fees/stats'));
-      setItems(await api('/fees' + (filter ? `?status_filter=${filter}` : '')));
+      const [s, list] = await Promise.all([
+        api<FeeStats>('/fees/stats'),
+        api<AdminFee[]>('/fees' + (filter ? `?status_filter=${filter}` : '')),
+      ]);
+      setStats(s);
+      setItems(list);
       api('/fees/claims/stats').then(setClaimStats).catch(() => {});
       setError(null);
     } catch (e) {
@@ -52,6 +61,11 @@ export default function FeesAdmin({ navigate }: ScreenProps) {
   useEffect(() => {
     load();
   }, [load]);
+
+  const openPay = useCallback((f: AdminFee) => {
+    setPaying(f);
+    setMethod('cash');
+  }, []);
 
   const pay = async () => {
     if (!paying) return;
@@ -67,11 +81,30 @@ export default function FeesAdmin({ navigate }: ScreenProps) {
     }
   };
 
-  if (!items && !error) return <Loading />;
+  if (!items && !error) {
+    return (
+      <ScreenSkeleton>
+        <StatTilesSkeleton count={2} />
+        <StatTilesSkeleton count={2} />
+        <CardSkeleton icon lines={1} />
+        <SectionTitleSkeleton />
+        <ChipsSkeleton count={4} />
+        <ListSkeleton badge="right" lines={1} action count={3} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen refreshing={refreshing} onRefresh={() => load(true)}>
+      <ListScreen
+        data={items}
+        keyExtractor={f => f.id}
+        renderItem={f => <FeeRow fee={f} onPay={openPay} />}
+        empty={<Empty icon="💰" text={t('No fee records.')} />}
+        refreshing={refreshing}
+        onRefresh={() => load(true)}
+        header={
+          <>
         <ErrorBox message={error} />
 
         <View style={styles.statRow}>
@@ -108,27 +141,9 @@ export default function FeesAdmin({ navigate }: ScreenProps) {
           value={filter}
           onChange={setFilter}
         />
-        {items?.length === 0 && <Empty icon="💰" text={t('No fee records.')} />}
-        {items?.map(f => (
-          <Card key={f.id}>
-            <View style={styles.head}>
-              <Text style={styles.student}>{f.student_name}</Text>
-              <Badge status={f.effective_status} />
-            </View>
-            <Text style={styles.sub}>
-              {f.title} · {f.class_name || '—'}{f.section_name ? ` / ${f.section_name}` : ''}
-            </Text>
-            <View style={styles.footer}>
-              <Text style={styles.amount}>{inr(f.amount)}</Text>
-              {f.status !== 'paid' ? (
-                <Button label={t('Mark paid')} kind="soft" small onPress={() => { setPaying(f); setMethod('cash') }} />
-              ) : (
-                <Text style={{ color: colors.subtle, fontSize: 12 }}>{t('Paid {date}', { date: fmtDate(f.paid_date) })}</Text>
-              )}
-            </View>
-          </Card>
-        ))}
-      </Screen>
+          </>
+        }
+      />
 
       <Sheet visible={!!paying} title={paying ? `${t('Mark paid')} — ${paying.student_name}` : ''} onClose={() => setPaying(null)}>
         {paying && (
@@ -149,6 +164,29 @@ export default function FeesAdmin({ navigate }: ScreenProps) {
     </View>
   );
 }
+
+/** One fee record card; memoised so the list doesn't redraw when the sheet changes. */
+const FeeRow = memo(function FeeRow({ fee: f, onPay }: { fee: AdminFee; onPay: (f: AdminFee) => void }) {
+  return (
+    <Card>
+      <View style={styles.head}>
+        <Text style={styles.student}>{f.student_name}</Text>
+        <Badge status={f.effective_status} />
+      </View>
+      <Text style={styles.sub}>
+        {f.title} · {f.class_name || '—'}{f.section_name ? ` / ${f.section_name}` : ''}
+      </Text>
+      <View style={styles.footer}>
+        <Text style={styles.amount}>{inr(f.amount)}</Text>
+        {f.status !== 'paid' ? (
+          <Button label={t('Mark paid')} kind="soft" small onPress={() => onPay(f)} />
+        ) : (
+          <Text style={{ color: colors.subtle, fontSize: 12 }}>{t('Paid {date}', { date: fmtDate(f.paid_date) })}</Text>
+        )}
+      </View>
+    </Card>
+  );
+});
 
 const styles = StyleSheet.create({
   statRow: { flexDirection: 'row', marginHorizontal: -4, marginBottom: 4 },

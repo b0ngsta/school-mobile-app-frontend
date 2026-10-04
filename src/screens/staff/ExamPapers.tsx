@@ -3,14 +3,16 @@
 // principal; teachers see upload status.
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { api } from '../../api';
+import { api, peek } from '../../api';
 import {
   Button,
   Card,
   Empty,
   ErrorBox,
-  Loading,
+  HeroSkeleton,
+  ListSkeleton,
   Screen,
+  ScreenSkeleton,
   fmtDate,
 } from '../../components/ui';
 import { colors } from '../../theme';
@@ -39,7 +41,7 @@ async function pickPdf(): Promise<PickedDocument | null> {
 export default function ExamPapers({ params, session }: ScreenProps) {
   const { examId, classId, className } = params || {};
   const canUpload = PAPER_MANAGERS.includes(session.user_type);
-  const [data, setData] = useState<ExamPapersResponse | null>(null);
+  const [data, setData] = useState<ExamPapersResponse | null>(() => peek<ExamPapersResponse>(`/exams/${examId}/classes/${classId}/papers`));
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [busySubject, setBusySubject] = useState<string | null>(null);
@@ -92,7 +94,14 @@ export default function ExamPapers({ params, session }: ScreenProps) {
     }
   };
 
-  if (!data && !error) return <Loading />;
+  if (!data && !error) {
+    return (
+      <ScreenSkeleton>
+        <HeroSkeleton />
+        <ListSkeleton icon lines={2} action count={3} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => load(true)}>

@@ -5,12 +5,14 @@ import { StyleSheet, Text, View } from 'react-native';
 import { api, photoUrl } from '../../api';
 import {
   Avatar,
+  Bone,
   Button,
   Card,
+  ChipsSkeleton,
   Empty,
   ErrorBox,
-  Loading,
   Screen,
+  ScreenSkeleton,
   Segments,
   fmtDate,
 } from '../../components/ui';
@@ -34,9 +36,13 @@ export default function StaffAttendance({ session }: ScreenProps) {
   const load = useCallback(async (r = false) => {
     r && setRefreshing(true);
     try {
-      setToday(await api('/staff-attendance/today'));
-      if (tab === 'mine') setHistory(await api('/staff-attendance/mine'));
-      else setAllToday(await api('/staff-attendance'));
+      const [todayRec, list] = await Promise.all([
+        api('/staff-attendance/today'),
+        api(tab === 'mine' ? '/staff-attendance/mine' : '/staff-attendance'),
+      ]);
+      setToday(todayRec);
+      if (tab === 'mine') setHistory(list);
+      else setAllToday(list);
       setError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -60,7 +66,28 @@ export default function StaffAttendance({ session }: ScreenProps) {
     }
   };
 
-  if (!today && !error) return <Loading />;
+  if (!today && !error) {
+    return (
+      <ScreenSkeleton>
+        <View style={[styles.today, { backgroundColor: colors.brand }]}>
+          <Bone onBrand width="55%" height={16} />
+          <View style={{ flexDirection: 'row', marginTop: 10 }}>
+            <Bone onBrand height={58} radius={12} style={styles.timeBoxBone} />
+            <Bone onBrand height={58} radius={12} style={styles.timeBoxBone} />
+          </View>
+          <Bone onBrand height={40} radius={14} style={{ marginTop: 12 }} />
+        </View>
+        {isManager && <ChipsSkeleton count={2} />}
+        {Array.from({ length: 5 }, (_, i) => (
+          <Card key={i} style={styles.row}>
+            <Bone width={110} height={12} style={{ flex: 1 }} />
+            <Bone width={58} height={11} style={{ marginLeft: 10 }} />
+            <Bone width={58} height={11} style={{ marginLeft: 10 }} />
+          </Card>
+        ))}
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => load(true)}>
@@ -153,4 +180,5 @@ const styles = StyleSheet.create({
   timeVal: { color: '#fff', fontSize: 18, fontWeight: '800', marginTop: 2 },
   row: { flexDirection: 'row', alignItems: 'center' },
   times: { color: colors.subtle, fontSize: 12, marginLeft: 10, fontWeight: '600' },
+  timeBoxBone: { flex: 1, width: undefined, marginRight: 8 },
 });

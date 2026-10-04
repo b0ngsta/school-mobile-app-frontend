@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text } from 'react-native';
-import { Card, Empty, ErrorBox, Loading, Screen, fmtDate } from '../components/ui';
+import { Card, Empty, ErrorBox, ListSkeleton, Screen, ScreenSkeleton, fmtDate } from '../components/ui';
 import { useApi, useI18n } from '../hooks';
 import { colors } from '../theme';
 import type { Notice } from '../types';
@@ -8,7 +8,13 @@ import type { Notice } from '../types';
 export default function Notices() {
   const { t } = useI18n();
   const { data, error, loading, refreshing, refresh } = useApi<Notice[]>('/student/notices');
-  if (loading) return <Loading />;
+  if (loading) {
+    return (
+      <ScreenSkeleton>
+        <ListSkeleton lines={3} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>

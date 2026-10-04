@@ -1,17 +1,21 @@
 // Student detail for staff: profile + attendance summary + homework + remarks.
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { api, photoUrl } from '../../api';
+import { api, peek, photoUrl } from '../../api';
 import {
   Avatar,
   Badge,
+  Bone,
   Button,
   Card,
+  CardSkeleton,
+  ChipsSkeleton,
   Empty,
   ErrorBox,
   Input,
-  Loading,
+  ListSkeleton,
   Screen,
+  ScreenSkeleton,
   Segments,
   Sheet,
   fmtDate,
@@ -22,10 +26,10 @@ import { t } from '../../i18n';
 
 export default function StudentDetail({ params }: ScreenProps) {
   const { studentId } = params || {};
-  const [student, setStudent] = useState<StudentListItem | null>(null);
-  const [attendance, setAttendance] = useState<AttendanceResponse | null>(null);
-  const [homework, setHomework] = useState<HomeworkItem[] | null>(null);
-  const [remarks, setRemarks] = useState<Remark[] | null>(null);
+  const [student, setStudent] = useState<StudentListItem | null>(() => peek<StudentListItem>(`/students/${studentId}`));
+  const [attendance, setAttendance] = useState<AttendanceResponse | null>(() => peek<AttendanceResponse>(`/students/${studentId}/attendance`));
+  const [homework, setHomework] = useState<HomeworkItem[] | null>(() => peek<HomeworkItem[]>(`/students/${studentId}/homework`));
+  const [remarks, setRemarks] = useState<Remark[] | null>(() => peek<Remark[]>(`/students/${studentId}/remarks`));
   const [tab, setTab] = useState('homework');
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -86,7 +90,16 @@ export default function StudentDetail({ params }: ScreenProps) {
     }
   };
 
-  if (!student && !error) return <Loading />;
+  if (!student && !error) {
+    return (
+      <ScreenSkeleton>
+        <CardSkeleton avatar={56} lines={2} badge="right" />
+        <ChipsSkeleton count={2} />
+        <Bone width={140} height={32} radius={14} style={{ marginBottom: 10 }} />
+        <ListSkeleton badge="right" lines={1} count={3} />
+      </ScreenSkeleton>
+    );
+  }
   const summary = attendance?.summary;
 
   return (

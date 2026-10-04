@@ -2,18 +2,20 @@
 // monthly salaries for any staff member.
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { api } from '../../api';
+import { api, peek } from '../../api';
 import {
   Badge,
   Button,
   Card,
   Chip,
+  ChipsSkeleton,
   Empty,
   ErrorBox,
   Fab,
   Input,
-  Loading,
+  ListSkeleton,
   Screen,
+  ScreenSkeleton,
   Segments,
   Sheet,
   inr,
@@ -36,7 +38,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 export default function Salary({ session }: ScreenProps) {
   const isManager = MANAGER_ROLES.includes(session.user_type);
   const [tab, setTab] = useState('mine');
-  const [items, setItems] = useState<SalaryRecord[] | null>(null);
+  const [items, setItems] = useState<SalaryRecord[] | null>(() => peek<SalaryRecord[]>('/salaries/mine'));
   const [staffList, setStaffList] = useState<StaffUser[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -92,7 +94,14 @@ export default function Salary({ session }: ScreenProps) {
     }
   };
 
-  if (!items && !error) return <Loading />;
+  if (!items && !error) {
+    return (
+      <ScreenSkeleton>
+        {isManager && <ChipsSkeleton count={2} />}
+        <ListSkeleton badge="right" lines={2} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>

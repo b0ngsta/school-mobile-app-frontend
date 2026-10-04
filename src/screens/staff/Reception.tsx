@@ -1,7 +1,7 @@
 // Reception — admission enquiries (managers).
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { api } from '../../api';
+import { api, peek } from '../../api';
 import {
   Badge,
   Button,
@@ -12,9 +12,11 @@ import {
   Fab,
   IconStat,
   Input,
-  Loading,
+  ListSkeleton,
   Screen,
+  ScreenSkeleton,
   Sheet,
+  StatTilesSkeleton,
   fmtDate,
 } from '../../components/ui';
 import { colors } from '../../theme';
@@ -24,8 +26,8 @@ import { statusLabel, t } from '../../i18n';
 const STATUSES = ['new', 'follow_up', 'converted', 'closed'];
 
 export default function Reception() {
-  const [stats, setStats] = useState<EnquiryStats | null>(null);
-  const [items, setItems] = useState<Enquiry[] | null>(null);
+  const [stats, setStats] = useState<EnquiryStats | null>(() => peek<EnquiryStats>('/enquiries/stats'));
+  const [items, setItems] = useState<Enquiry[] | null>(() => peek<Enquiry[]>('/enquiries'));
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -35,8 +37,9 @@ export default function Reception() {
   const load = useCallback(async (r = false) => {
     r && setRefreshing(true);
     try {
-      setStats(await api('/enquiries/stats'));
-      setItems(await api('/enquiries'));
+      const [s, list] = await Promise.all([api('/enquiries/stats'), api('/enquiries')]);
+      setStats(s);
+      setItems(list);
       setError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -83,7 +86,14 @@ export default function Reception() {
     }
   };
 
-  if (!items && !error) return <Loading />;
+  if (!items && !error) {
+    return (
+      <ScreenSkeleton>
+        <StatTilesSkeleton count={3} />
+        <ListSkeleton badge="right" lines={3} count={3} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>

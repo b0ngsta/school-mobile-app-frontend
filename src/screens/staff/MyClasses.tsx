@@ -1,14 +1,14 @@
 // Teacher's assigned classes (class teacher + subject teacher roles).
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { api } from '../../api';
-import { Badge, Card, Empty, ErrorBox, Loading, Screen } from '../../components/ui';
+import { api, peek } from '../../api';
+import { Badge, Card, Empty, ErrorBox, ListSkeleton, Screen, ScreenSkeleton } from '../../components/ui';
 import { colors } from '../../theme';
 import type { Assignment, ScreenProps } from '../../types';
 import { t } from '../../i18n';
 
 export default function MyClasses({ navigate }: ScreenProps) {
-  const [items, setItems] = useState<Assignment[] | null>(null);
+  const [items, setItems] = useState<Assignment[] | null>(() => peek<Assignment[]>('/assignments/mine'));
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -27,7 +27,13 @@ export default function MyClasses({ navigate }: ScreenProps) {
     load();
   }, [load]);
 
-  if (!items && !error) return <Loading />;
+  if (!items && !error) {
+    return (
+      <ScreenSkeleton>
+        <ListSkeleton badge="right" lines={2} count={3} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => load(true)}>

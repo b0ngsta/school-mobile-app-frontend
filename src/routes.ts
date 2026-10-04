@@ -40,12 +40,15 @@ import Transport from './screens/staff/Transport';
 import Users from './screens/staff/Users';
 
 import type { ComponentType } from 'react';
+import type { ScreenTransition } from './components/ScreenStack';
 import type { Role, ScreenProps } from './types';
 
 export interface ScreenEntry {
   component: ComponentType<ScreenProps>;
   title?: string;
   titleKey?: string;
+  /** Animate this screen in and back out (components/ScreenStack); omit to switch instantly. */
+  transition?: ScreenTransition;
 }
 
 // titleKey is looked up in src/i18n.ts; `title` is a plain string.
@@ -62,7 +65,7 @@ export const SCREENS = {
   Fees: { component: Fees, titleKey: 'title.Fees' },
   Remarks: { component: Remarks, titleKey: 'title.Remarks' },
   Notices: { component: Notices, titleKey: 'title.Notices' },
-  Profile: { component: Profile, titleKey: 'title.Profile' },
+  Profile: { component: Profile, titleKey: 'title.Profile', transition: 'fadeScale' },
   StudentTimetable: { component: StudentTimetable, title: 'Time table' },
 
   // ---- shared ----
@@ -86,7 +89,7 @@ export const SCREENS = {
   Reception: { component: Reception, title: 'Reception' },
   BulkSMS: { component: BulkSMS, title: 'Bulk SMS' },
   StaffNotices: { component: StaffNotices, titleKey: 'title.Notices' },
-  StaffProfile: { component: StaffProfile, titleKey: 'title.Profile' },
+  StaffProfile: { component: StaffProfile, titleKey: 'title.Profile', transition: 'fadeScale' },
   Teachers: { component: Teachers, title: 'Teachers' },
   TeacherProfile: { component: TeacherProfile, title: 'Teacher' },
   MyTimetable: { component: MyTimetable, title: 'My timetable' },

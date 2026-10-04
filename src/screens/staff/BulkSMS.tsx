@@ -1,7 +1,7 @@
 // Bulk SMS (managers) — compose + history. Sending is simulated server-side.
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { api } from '../../api';
+import { api, peek } from '../../api';
 import {
   Badge,
   Button,
@@ -11,8 +11,9 @@ import {
   ErrorBox,
   Fab,
   Input,
-  Loading,
+  ListSkeleton,
   Screen,
+  ScreenSkeleton,
   Sheet,
   fmtDate,
 } from '../../components/ui';
@@ -27,7 +28,7 @@ const GROUPS = [
 ];
 
 export default function BulkSMS() {
-  const [items, setItems] = useState<SmsLog[] | null>(null);
+  const [items, setItems] = useState<SmsLog[] | null>(() => peek<SmsLog[]>('/sms'));
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [composing, setComposing] = useState(false);
@@ -65,7 +66,13 @@ export default function BulkSMS() {
     }
   };
 
-  if (!items && !error) return <Loading />;
+  if (!items && !error) {
+    return (
+      <ScreenSkeleton>
+        <ListSkeleton badge="right" lines={2} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>

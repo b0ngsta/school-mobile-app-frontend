@@ -2,13 +2,15 @@
 // notice pill and a colorful 3-column launcher grid. Grid-only navigation.
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { api, photoUrl } from '../api';
+import { api, peek, photoUrl } from '../api';
 import {
   Avatar,
+  Bone,
   ErrorBox,
-  Loading,
   Screen,
+  Skeleton,
   TileGrid,
+  TileGridSkeleton,
   UpdatesBar,
   inr,
 } from '../components/ui';
@@ -40,14 +42,15 @@ const greeting = () => {
 
 export default function HomeStudent({ navigate }: ScreenProps) {
   const { t } = useI18n();
-  const [dash, setDash] = useState<StudentDashboard | null>(null);
-  const [fees, setFees] = useState<FeesResponse | null>(null);
+  const [dash, setDash] = useState<StudentDashboard | null>(() => peek<StudentDashboard>('/student/dashboard'));
+  const [fees, setFees] = useState<FeesResponse | null>(() => peek<FeesResponse>('/student/fees'));
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => peek('/student/dashboard') === null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async (r = false) => {
-    r ? setRefreshing(true) : setLoading(true);
+    // With a cached dashboard the screen stays up while fresh data loads.
+    r ? setRefreshing(true) : setLoading(peek('/student/dashboard') === null);
     try {
       setDash(await api<StudentDashboard>('/student/dashboard'));
       api<FeesResponse>('/student/fees').then(setFees).catch(() => {});
@@ -63,7 +66,7 @@ export default function HomeStudent({ navigate }: ScreenProps) {
     load();
   }, [load]);
 
-  if (loading) return <Loading />;
+  if (loading) return <HomeSkeleton />;
 
   const p = dash?.profile;
   const paid = fees ? fees.totals.paid : null;
@@ -73,13 +76,12 @@ export default function HomeStudent({ navigate }: ScreenProps) {
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => load(true)} padded={false}>
-      <View style={{ padding: 16, paddingBottom: 90 }}>
+      <View style={styles.page}>
         <ErrorBox message={error} />
 
         {/* hero greeting header */}
         <View style={[styles.hero, { backgroundColor: colors.brand }]}>
-          <View style={[styles.heroBubble, { top: -36, right: -24, width: 140, height: 140 }]} />
-          <View style={[styles.heroBubble, { bottom: -50, left: -30, width: 110, height: 110 }]} />
+          <HeroBubbles />
           <View style={styles.heroRow}>
             <Avatar name={p?.full_name} uri={photoUrl(p?.photo_path)} size={52} />
             <View style={{ flex: 1, marginLeft: 12 }}>
@@ -127,7 +129,53 @@ export default function HomeStudent({ navigate }: ScreenProps) {
   );
 }
 
+// The hero's decorative circles (shared with the skeleton).
+const HeroBubbles = () => (
+  <>
+    <View style={[styles.heroBubble, { top: -36, right: -24, width: 140, height: 140 }]} />
+    <View style={[styles.heroBubble, { bottom: -50, left: -30, width: 110, height: 110 }]} />
+  </>
+);
+
+// Shown while the dashboard loads: the same layout with placeholder bones,
+// so the page (and the screen transition into it) is visible immediately.
+function HomeSkeleton() {
+  return (
+    <Screen padded={false}>
+      <Skeleton>
+        <View style={styles.page}>
+          <View style={[styles.hero, { backgroundColor: colors.brand }]}>
+            <HeroBubbles />
+            <View style={styles.heroRow}>
+              <Bone onBrand width={52} height={52} radius={26} />
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Bone onBrand width={88} height={10} />
+                <Bone onBrand width={150} height={16} style={{ marginTop: 7 }} />
+                <Bone onBrand width={118} height={10} style={{ marginTop: 7 }} />
+              </View>
+            </View>
+          </View>
+
+          <View style={[styles.statsCard, shadow.card]}>
+            {[0, 1, 2].map(i => (
+              <View key={i} style={[styles.statCell, i === 1 && styles.statCellMid]}>
+                <Bone width={58} height={16} />
+                <Bone width={46} height={8} style={{ marginTop: 6 }} />
+              </View>
+            ))}
+          </View>
+          <Bone width={120} height={9} style={styles.totalBone} />
+          <Bone height={44} radius={14} style={{ marginBottom: 14 }} />
+
+          <TileGridSkeleton count={GRID.length} />
+        </View>
+      </Skeleton>
+    </Screen>
+  );
+}
+
 const styles = StyleSheet.create({
+  page: { padding: 16, paddingBottom: 90 },
   hero: {
     borderRadius: 24,
     padding: 18,
@@ -155,6 +203,7 @@ const styles = StyleSheet.create({
   statCellMid: { borderLeftWidth: 1, borderRightWidth: 1, borderColor: colors.line },
   statValue: { fontSize: 16, fontWeight: '800' },
   statLabel: { fontSize: 10.5, color: colors.subtle, marginTop: 3 },
+  totalBone: { alignSelf: 'center', marginTop: 11, marginBottom: 15 },
   totalLine: {
     textAlign: 'center',
     fontSize: 11,

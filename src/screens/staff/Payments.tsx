@@ -1,16 +1,19 @@
 // Payment transactions (managers).
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { api } from '../../api';
+import { api, peek } from '../../api';
 import {
   Badge,
   Card,
   Empty,
   ErrorBox,
   IconStat,
-  Loading,
-  Screen,
+  ListSkeleton,
+  ListScreen,
+  ScreenSkeleton,
   SectionTitle,
+  SectionTitleSkeleton,
+  StatTilesSkeleton,
   fmtDate,
   inr,
 } from '../../components/ui';
@@ -19,16 +22,17 @@ import type { Transaction, TransactionStats } from '../../types';
 import { t } from '../../i18n';
 
 export default function Payments() {
-  const [stats, setStats] = useState<TransactionStats | null>(null);
-  const [items, setItems] = useState<Transaction[] | null>(null);
+  const [stats, setStats] = useState<TransactionStats | null>(() => peek<TransactionStats>('/transactions/stats'));
+  const [items, setItems] = useState<Transaction[] | null>(() => peek<Transaction[]>('/transactions'));
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async (r = false) => {
     r && setRefreshing(true);
     try {
-      setStats(await api('/transactions/stats'));
-      setItems(await api('/transactions'));
+      const [s, list] = await Promise.all([api('/transactions/stats'), api('/transactions')]);
+      setStats(s);
+      setItems(list);
       setError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -40,10 +44,27 @@ export default function Payments() {
     load();
   }, [load]);
 
-  if (!items && !error) return <Loading />;
+  if (!items && !error) {
+    return (
+      <ScreenSkeleton>
+        <StatTilesSkeleton count={2} />
+        <StatTilesSkeleton count={2} />
+        <SectionTitleSkeleton />
+        <ListSkeleton badge="right" lines={2} count={3} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
-    <Screen refreshing={refreshing} onRefresh={() => load(true)}>
+    <ListScreen
+      data={items}
+      keyExtractor={x => x.id}
+      renderItem={x => <TxRow tx={x} />}
+      empty={<Empty icon="💳" text={t('No transactions yet.')} />}
+      refreshing={refreshing}
+      onRefresh={() => load(true)}
+      header={
+        <>
       <ErrorBox message={error} />
       <View style={styles.statRow}>
         <IconStat icon="📅" label={t('Today')} value={stats ? inr(stats.today_collection) : '—'} tint={colors.ok} soft={colors.okSoft} />
@@ -55,25 +76,30 @@ export default function Payments() {
       </View>
 
       <SectionTitle>{t('History')}</SectionTitle>
-      {items?.length === 0 && <Empty icon="💳" text={t('No transactions yet.')} />}
-      {items?.map(x => (
-        <Card key={x.id}>
-          <View style={styles.head}>
-            <Text style={styles.ref}>{x.reference}</Text>
-            <Badge status={x.status} />
-          </View>
-          <Text style={styles.sub}>
-            {x.student_name || '—'}{x.fee_title ? ` · ${x.fee_title}` : ''}
-          </Text>
-          <View style={styles.footer}>
-            <Text style={styles.amount}>{inr(x.amount)}</Text>
-            <Text style={styles.sub}>{String(x.method).toUpperCase()} · {fmtDate(x.created_at)}</Text>
-          </View>
-        </Card>
-      ))}
-    </Screen>
+        </>
+      }
+    />
   );
 }
+
+/** One transaction card. */
+const TxRow = memo(function TxRow({ tx: x }: { tx: Transaction }) {
+  return (
+    <Card>
+      <View style={styles.head}>
+        <Text style={styles.ref}>{x.reference}</Text>
+        <Badge status={x.status} />
+      </View>
+      <Text style={styles.sub}>
+        {x.student_name || '—'}{x.fee_title ? ` · ${x.fee_title}` : ''}
+      </Text>
+      <View style={styles.footer}>
+        <Text style={styles.amount}>{inr(x.amount)}</Text>
+        <Text style={styles.sub}>{String(x.method).toUpperCase()} · {fmtDate(x.created_at)}</Text>
+      </View>
+    </Card>
+  );
+});
 
 const styles = StyleSheet.create({
   statRow: { flexDirection: 'row', marginHorizontal: -4, marginBottom: 4 },

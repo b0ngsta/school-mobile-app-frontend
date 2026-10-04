@@ -11,7 +11,6 @@ export const SCHOOL_CITY = '';
 
 // Academic session label, e.g. "2026-2027" (April–March).
 export function sessionLabel(d: Date = new Date()): string {
-  console.log('sessionLabel', d);
   const y = d.getFullYear();
   return d.getMonth() + 1 >= 4 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
 }

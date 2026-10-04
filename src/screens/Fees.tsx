@@ -2,18 +2,21 @@
 // payment-proof screenshot for a pending fee; staff approve on web/app.
 import React, { useCallback, useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { api } from '../api';
+import { api, peek } from '../api';
 import {
   Badge,
+  Bone,
   Button,
   Card,
   Chip,
   Empty,
   ErrorBox,
   Input,
-  Loading,
+  ListSkeleton,
   Screen,
+  ScreenSkeleton,
   SectionTitle,
+  SectionTitleSkeleton,
   Sheet,
   fmtDate,
 } from '../components/ui';
@@ -37,7 +40,7 @@ async function pickImage(): Promise<PickedImage | null> {
 
 export default function Fees() {
   const { t } = useI18n();
-  const [data, setData] = useState<FeesResponse | null>(null);
+  const [data, setData] = useState<FeesResponse | null>(() => peek<FeesResponse>('/student/fees'));
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [claiming, setClaiming] = useState<FeeRecord | null>(null);
@@ -105,7 +108,22 @@ export default function Fees() {
     }
   };
 
-  if (!data && !error) return <Loading />;
+  if (!data && !error) {
+    return (
+      <ScreenSkeleton>
+        <View style={styles.totals}>
+          {[0, 1].map(i => (
+            <Card key={i} style={[styles.total, i === 0 && { marginRight: 8 }]}>
+              <Bone width={58} height={11} />
+              <Bone width={96} height={22} style={{ marginTop: 8 }} />
+            </Card>
+          ))}
+        </View>
+        <SectionTitleSkeleton />
+        <ListSkeleton badge="right" lines={2} action count={3} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>

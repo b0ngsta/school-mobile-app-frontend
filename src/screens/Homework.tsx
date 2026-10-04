@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text } from 'react-native';
-import { Badge, Card, Empty, ErrorBox, Loading, Screen, fmtDate } from '../components/ui';
+import { Badge, Card, Empty, ErrorBox, ListSkeleton, Screen, ScreenSkeleton, fmtDate } from '../components/ui';
 import { useApi, useI18n } from '../hooks';
 import { colors } from '../theme';
 import type { HomeworkItem } from '../types';
@@ -8,7 +8,13 @@ import type { HomeworkItem } from '../types';
 export default function Homework() {
   const { t } = useI18n();
   const { data, error, loading, refreshing, refresh } = useApi<HomeworkItem[]>('/student/homework');
-  if (loading) return <Loading />;
+  if (loading) {
+    return (
+      <ScreenSkeleton>
+        <ListSkeleton lines={2} badge="below" />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>

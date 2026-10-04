@@ -2,14 +2,14 @@
 // teacher profile with Details + Timetable tabs.
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { api, photoUrl } from '../../api';
-import { Avatar, Card, Empty, ErrorBox, Loading, Screen } from '../../components/ui';
+import { api, peek, photoUrl } from '../../api';
+import { Avatar, Card, Empty, ErrorBox, ListSkeleton, Screen, ScreenSkeleton } from '../../components/ui';
 import { colors } from '../../theme';
 import type { ScreenProps, StaffUser } from '../../types';
 import { t } from '../../i18n';
 
 export default function Teachers({ navigate, params }: ScreenProps) {
-  const [items, setItems] = useState<StaffUser[] | null>(null);
+  const [items, setItems] = useState<StaffUser[] | null>(() => peek<StaffUser[]>('/users/teachers'));
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -28,7 +28,13 @@ export default function Teachers({ navigate, params }: ScreenProps) {
     load();
   }, [load]);
 
-  if (!items && !error) return <Loading />;
+  if (!items && !error) {
+    return (
+      <ScreenSkeleton>
+        <ListSkeleton avatar={48} lines={2} count={5} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => load(true)}>

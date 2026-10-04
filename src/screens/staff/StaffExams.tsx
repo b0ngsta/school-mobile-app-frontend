@@ -2,7 +2,7 @@
 // Managers can create exams (for one class or ALL classes).
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { api } from '../../api';
+import { api, peek } from '../../api';
 import {
   Badge,
   Button,
@@ -13,9 +13,11 @@ import {
   Fab,
   IconStat,
   Input,
-  Loading,
+  ListSkeleton,
   Screen,
+  ScreenSkeleton,
   Sheet,
+  StatTilesSkeleton,
   fmtDate,
 } from '../../components/ui';
 import { MANAGER_ROLES } from '../../roles';
@@ -25,8 +27,8 @@ import { t } from '../../i18n';
 
 export default function StaffExams({ navigate, session }: ScreenProps) {
   const isManager = MANAGER_ROLES.includes(session.user_type);
-  const [stats, setStats] = useState<ExamStats | null>(null);
-  const [items, setItems] = useState<AdminExam[] | null>(null);
+  const [stats, setStats] = useState<ExamStats | null>(() => peek<ExamStats>('/exams/stats'));
+  const [items, setItems] = useState<AdminExam[] | null>(() => peek<AdminExam[]>('/exams'));
   const [classes, setClasses] = useState<AdminClass[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -37,8 +39,9 @@ export default function StaffExams({ navigate, session }: ScreenProps) {
   const load = useCallback(async (r = false) => {
     r && setRefreshing(true);
     try {
-      setStats(await api('/exams/stats'));
-      setItems(await api('/exams'));
+      const [s, list] = await Promise.all([api('/exams/stats'), api('/exams')]);
+      setStats(s);
+      setItems(list);
       setError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -76,7 +79,14 @@ export default function StaffExams({ navigate, session }: ScreenProps) {
     }
   };
 
-  if (!items && !error) return <Loading />;
+  if (!items && !error) {
+    return (
+      <ScreenSkeleton>
+        <StatTilesSkeleton count={3} />
+        <ListSkeleton badge="right" lines={2} count={3} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>

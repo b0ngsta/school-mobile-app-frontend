@@ -2,17 +2,19 @@
 // events green (exam on a Sunday/holiday still shows as holiday). Managers
 // tap a date to add/edit/delete a holiday; everyone else (incl. students)
 // views. Events/exams are managed from the web app's Calendar tab.
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { api } from '../api';
+import { api, peek } from '../api';
 import {
+  Bone,
   Button,
   Card,
   Empty,
   ErrorBox,
   Input,
-  Loading,
+  ListSkeleton,
   Screen,
+  ScreenSkeleton,
   Sheet,
   fmtDate,
 } from '../components/ui';
@@ -53,8 +55,8 @@ export default function Holidays({ session }: ScreenProps) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth()); // 0-11
-  const [items, setItems] = useState<Holiday[] | null>(null);
-  const [cal, setCal] = useState<CalendarPayload | null>(null);
+  const [items, setItems] = useState<Holiday[] | null>(() => peek<Holiday[]>(`${isStudent ? '/student' : ''}/holidays?year=${now.getFullYear()}`));
+  const [cal, setCal] = useState<CalendarPayload | null>(() => peek<CalendarPayload>(`${isStudent ? '/student' : ''}/calendar`));
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [editing, setEditing] = useState<EditingDay | null>(null);
@@ -81,8 +83,13 @@ export default function Holidays({ session }: ScreenProps) {
     load();
   }, [load]);
 
-  const byDate: Record<string, Holiday> = {};
-  for (const h of items || []) byDate[String(h.date).slice(0, 10)] = h;
+  // Derived from the fetched data only — recomputed when it changes, not on
+  // every keystroke in the holiday sheet.
+  const byDate = useMemo(() => {
+    const out: Record<string, Holiday> = {};
+    for (const h of items || []) out[String(h.date).slice(0, 10)] = h;
+    return out;
+  }, [items]);
 
   // exam / event names per date (holiday-category events already arrive via /holidays)
   const kindColors: Record<Kind, { bg: string; fg: string }> = {
@@ -90,17 +97,22 @@ export default function Holidays({ session }: ScreenProps) {
     exam: { bg: colors.infoSoft, fg: colors.info },
     event: { bg: colors.okSoft, fg: colors.ok },
   };
-  const marked: Record<'exam' | 'event', Record<string, string[]>> = { exam: {}, event: {} };
-  const mark = (kind: 'exam' | 'event', date: string, name: string) =>
-    (marked[kind][date] ||= []).push(name);
-  for (const e of cal?.events || []) {
-    if (e.category === 'holiday') continue;
-    for (const d of e.dates) mark(e.category, String(d).slice(0, 10), e.title);
-  }
-  for (const x of cal?.exams || []) {
-    const label = x.class_name ? `${x.name} (${x.class_name})` : x.name;
-    for (const d of eachDate(String(x.start_date), String(x.end_date))) mark('exam', d, label);
-  }
+  const { marked, examDates } = useMemo(() => {
+    const m: Record<'exam' | 'event', Record<string, string[]>> = { exam: {}, event: {} };
+    const dates: string[][] = []; // dates of cal.exams[i]
+    const mark = (kind: 'exam' | 'event', date: string, name: string) => (m[kind][date] ||= []).push(name);
+    for (const e of cal?.events || []) {
+      if (e.category === 'holiday') continue;
+      for (const d of e.dates) mark(e.category, String(d).slice(0, 10), e.title);
+    }
+    for (const x of cal?.exams || []) {
+      const label = x.class_name ? `${x.name} (${x.class_name})` : x.name;
+      const ds = eachDate(String(x.start_date), String(x.end_date));
+      dates.push(ds);
+      for (const d of ds) mark('exam', d, label);
+    }
+    return { marked: m, examDates: dates };
+  }, [cal]);
 
   const prev = () => {
     const m = month === 0 ? 11 : month - 1;
@@ -153,7 +165,7 @@ export default function Holidays({ session }: ScreenProps) {
     }
   };
 
-  if (!items && !error) return <Loading />;
+  if (!items && !error) return <HolidaysSkeleton />;
 
   // calendar grid
   const firstDay = (new Date(year, month, 1).getDay() + 6) % 7; // Mon=0
@@ -171,8 +183,7 @@ export default function Holidays({ session }: ScreenProps) {
   const monthEvents = (cal?.events || [])
     .map(e => ({ ...e, dates: e.dates.filter(d => String(d).startsWith(monthPrefix)).sort() }))
     .filter(e => e.category !== 'holiday' && e.dates.length > 0);
-  const monthExams = (cal?.exams || []).filter(x =>
-    eachDate(String(x.start_date), String(x.end_date)).some(d => d.startsWith(monthPrefix)));
+  const monthExams = (cal?.exams || []).filter((_, i) => examDates[i].some(d => d.startsWith(monthPrefix)));
 
   return (
     <View style={{ flex: 1 }}>
@@ -183,11 +194,11 @@ export default function Holidays({ session }: ScreenProps) {
           {/* month header */}
           <View style={styles.monthHead}>
             <TouchableOpacity onPress={prev} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Text style={styles.nav}>‹</Text>
+              <Text style={[styles.nav, { color: colors.brand }]}>‹</Text>
             </TouchableOpacity>
             <Text style={styles.monthTitle}>{t(MONTHS[month])} {year}</Text>
             <TouchableOpacity onPress={next} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Text style={styles.nav}>›</Text>
+              <Text style={[styles.nav, { color: colors.brand }]}>›</Text>
             </TouchableOpacity>
           </View>
 
@@ -304,6 +315,41 @@ export default function Holidays({ session }: ScreenProps) {
   );
 }
 
+// Shown while the calendar loads: the month card with placeholder days.
+function HolidaysSkeleton() {
+  return (
+    <ScreenSkeleton>
+      <Card>
+        <View style={styles.monthHead}>
+          <Bone width={22} height={22} radius={11} />
+          <Bone width={130} height={16} />
+          <Bone width={22} height={22} radius={11} />
+        </View>
+        <View style={styles.week}>
+          {WEEK.map(w => (
+            <View key={w} style={styles.weekBone}>
+              <Bone width={18} height={9} />
+            </View>
+          ))}
+        </View>
+        <View style={styles.grid}>
+          {Array.from({ length: 35 }, (_, i) => (
+            <View key={i} style={styles.cellWrap}>
+              <Bone radius={10} style={styles.cell} />
+            </View>
+          ))}
+        </View>
+        <View style={styles.legend}>
+          <Bone width={88} height={20} radius={999} />
+          <Bone width={52} height={20} radius={999} />
+          <Bone width={56} height={20} radius={999} />
+        </View>
+      </Card>
+      <ListSkeleton icon lines={1} count={2} />
+    </ScreenSkeleton>
+  );
+}
+
 /** One row in the month list — colored date pill + title + subtitle. */
 function EventRow({ tone, date, title, sub }: {
   tone: { bg: string; fg: string };
@@ -331,9 +377,10 @@ function EventRow({ tone, date, title, sub }: {
 const styles = StyleSheet.create({
   monthHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   monthTitle: { fontSize: 16, fontWeight: '800', color: colors.ink },
-  nav: { fontSize: 26, color: colors.brand, fontWeight: '700', paddingHorizontal: 10 },
+  nav: { fontSize: 26, fontWeight: '700', paddingHorizontal: 10 },
   week: { flexDirection: 'row', marginBottom: 4 },
   weekDay: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700', color: colors.subtle },
+  weekBone: { flex: 1, alignItems: 'center', paddingVertical: 3 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   cellWrap: { width: '14.285%', padding: 2 },
   cell: {

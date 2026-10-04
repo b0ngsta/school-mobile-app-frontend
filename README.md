@@ -28,6 +28,7 @@ src/
   config.js          # API base URL — the only thing to change per environment
   theme.js           # design tokens (mirrors web tailwind.config.js)
   api.js             # fetch wrapper + session storage
+  cache.ts           # last GET responses per user → screens open instantly, refresh in background
   hooks.js           # useApi(path) — loading/error/refresh in one line
   routes.js          # route registry + bottom tabs
   components/ui.jsx  # Card, Badge, StatCard, Row, Screen, Avatar…

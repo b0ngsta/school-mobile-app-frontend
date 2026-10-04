@@ -1,7 +1,7 @@
 // Lesson plans — teachers see + create their own; managers browse all.
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { api } from '../../api';
+import { api, peek } from '../../api';
 import {
   Button,
   Card,
@@ -10,8 +10,9 @@ import {
   ErrorBox,
   Fab,
   Input,
-  Loading,
+  ListSkeleton,
   Screen,
+  ScreenSkeleton,
   Sheet,
   fmtDate,
 } from '../../components/ui';
@@ -29,7 +30,7 @@ interface LessonPlanForm {
 
 export default function LessonPlans({ session }: ScreenProps) {
   const isTeacher = session.user_type === 'teacher';
-  const [items, setItems] = useState<LessonPlan[] | null>(null);
+  const [items, setItems] = useState<LessonPlan[] | null>(() => peek<LessonPlan[]>('/lessons'));
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -75,7 +76,13 @@ export default function LessonPlans({ session }: ScreenProps) {
     }
   };
 
-  if (!items && !error) return <Loading />;
+  if (!items && !error) {
+    return (
+      <ScreenSkeleton>
+        <ListSkeleton lines={3} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>

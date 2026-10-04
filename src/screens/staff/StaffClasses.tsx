@@ -2,7 +2,7 @@
 // Managers can add classes (with SUBJECTS), add sections, edit subjects.
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { api } from '../../api';
+import { api, peek } from '../../api';
 import {
   Button,
   Card,
@@ -11,8 +11,9 @@ import {
   ErrorBox,
   Fab,
   Input,
-  Loading,
+  ListSkeleton,
   Screen,
+  ScreenSkeleton,
   Sheet,
   inr,
 } from '../../components/ui';
@@ -48,7 +49,7 @@ function SubjectEditor({ subjects, setSubjects }: { subjects: string[]; setSubje
 
 export default function StaffClasses({ navigate, session }: ScreenProps) {
   const isManager = MANAGER_ROLES.includes(session.user_type);
-  const [classes, setClasses] = useState<AdminClass[] | null>(null);
+  const [classes, setClasses] = useState<AdminClass[] | null>(() => peek<AdminClass[]>('/classes'));
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -123,7 +124,13 @@ export default function StaffClasses({ navigate, session }: ScreenProps) {
     }
   };
 
-  if (!classes && !error) return <Loading />;
+  if (!classes && !error) {
+    return (
+      <ScreenSkeleton>
+        <ListSkeleton badge="right" lines={1} block={46} action count={3} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>

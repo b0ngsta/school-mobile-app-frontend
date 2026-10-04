@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text } from 'react-native';
-import { Card, Empty, ErrorBox, Loading, Screen, fmtDate } from '../components/ui';
+import { Card, Empty, ErrorBox, ListSkeleton, Screen, ScreenSkeleton, fmtDate } from '../components/ui';
 import { useApi, useI18n } from '../hooks';
 import { colors } from '../theme';
 import type { Remark } from '../types';
@@ -8,7 +8,13 @@ import type { Remark } from '../types';
 export default function Remarks() {
   const { t } = useI18n();
   const { data, error, loading, refreshing, refresh } = useApi<Remark[]>('/student/remarks');
-  if (loading) return <Loading />;
+  if (loading) {
+    return (
+      <ScreenSkeleton>
+        <ListSkeleton lines={2} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>

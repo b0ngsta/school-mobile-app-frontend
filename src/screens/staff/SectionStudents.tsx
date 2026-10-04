@@ -1,29 +1,32 @@
 // Students of a section. Tap → student detail. Managers/class teacher can
 // add students and jump straight into attendance marking.
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { api, photoUrl } from '../../api';
+import { api, peek, photoUrl } from '../../api';
 import {
   Avatar,
+  Bone,
   Button,
   Card,
   Empty,
   ErrorBox,
   Fab,
+  HeroSkeleton,
   Input,
-  Loading,
-  Screen,
+  ListScreen,
+  ListSkeleton,
+  ScreenSkeleton,
   Sheet,
 } from '../../components/ui';
 import { MANAGER_ROLES } from '../../roles';
 import { colors } from '../../theme';
-import type { ScreenProps, StudentListItem } from '../../types';
+import type { NavigateFn, ScreenProps, StudentListItem } from '../../types';
 import { t } from '../../i18n';
 
 export default function SectionStudents({ navigate, params, session }: ScreenProps) {
   const { classId, sectionId, className, sectionName, canEdit } = params || {};
   const mayEdit = MANAGER_ROLES.includes(session.user_type) || canEdit;
-  const [items, setItems] = useState<StudentListItem[] | null>(null);
+  const [items, setItems] = useState<StudentListItem[] | null>(() => peek<StudentListItem[]>(`/students?class_id=${classId}&section_id=${sectionId}`));
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -72,11 +75,27 @@ export default function SectionStudents({ navigate, params, session }: ScreenPro
     }
   };
 
-  if (!items && !error) return <Loading />;
+  if (!items && !error) {
+    return (
+      <ScreenSkeleton>
+        <HeroSkeleton />
+        <Bone height={44} radius={14} style={{ marginBottom: 12 }} />
+        <ListSkeleton avatar={42} lines={1} count={6} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen refreshing={refreshing} onRefresh={() => load(true)}>
+      <ListScreen
+        data={items}
+        keyExtractor={s => s.id}
+        renderItem={s => <StudentRow student={s} navigate={navigate} />}
+        empty={<Empty icon="🧑‍🎓" text={t('No students in this section yet.')} />}
+        refreshing={refreshing}
+        onRefresh={() => load(true)}
+        header={
+          <>
         <ErrorBox message={error} />
 
         <View style={[styles.hero, { backgroundColor: colors.brand }]}>
@@ -92,24 +111,9 @@ export default function SectionStudents({ navigate, params, session }: ScreenPro
           }
           style={{ marginBottom: 12 }}
         />
-
-        {items?.length === 0 && <Empty icon="🧑‍🎓" text={t('No students in this section yet.')} />}
-        {items?.map(s => (
-          <TouchableOpacity
-            key={s.id}
-            activeOpacity={0.7}
-            onPress={() => navigate('StudentDetail', { studentId: s.id, title: s.full_name })}>
-            <Card style={styles.row}>
-              <Avatar name={s.full_name} uri={photoUrl(s.photo_path)} size={42} />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.name}>{s.full_name}</Text>
-                <Text style={styles.sub}>{t('Roll No.')} {s.roll_no || '—'}</Text>
-              </View>
-              <Text style={{ color: colors.subtle, fontSize: 22 }}>›</Text>
-            </Card>
-          </TouchableOpacity>
-        ))}
-      </Screen>
+          </>
+        }
+      />
       {mayEdit && <Fab onPress={() => setAdding(true)} />}
 
       <Sheet visible={adding} title={t('Add student')} onClose={() => setAdding(false)}>
@@ -122,6 +126,24 @@ export default function SectionStudents({ navigate, params, session }: ScreenPro
     </View>
   );
 }
+
+/** One student card; memoised so typing in the "Add student" sheet doesn't redraw the list. */
+const StudentRow = memo(function StudentRow({ student: s, navigate }: { student: StudentListItem; navigate: NavigateFn }) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={() => navigate('StudentDetail', { studentId: s.id, title: s.full_name })}>
+      <Card style={styles.row}>
+        <Avatar name={s.full_name} uri={photoUrl(s.photo_path)} size={42} />
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <Text style={styles.name}>{s.full_name}</Text>
+          <Text style={styles.sub}>{t('Roll No.')} {s.roll_no || '—'}</Text>
+        </View>
+        <Text style={{ color: colors.subtle, fontSize: 22 }}>›</Text>
+      </Card>
+    </TouchableOpacity>
+  );
+});
 
 const styles = StyleSheet.create({
   hero: { borderRadius: 18, padding: 16, marginBottom: 12 },

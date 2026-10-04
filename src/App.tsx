@@ -1,9 +1,11 @@
 // EduManage — app shell (multi-role, grid navigation like the mockups).
 // The header shows the school name + academic session; the home screen is a
 // role-specific tile grid and every feature is pushed on a tiny stack.
+// Each stack entry renders as its own page (top bar + screen) inside
+// <ScreenStack>, which animates the routes that opt in (routes.ts).
 // Role themes (violet student / green teacher / blue admin) are applied at
 // login via applyRoleTheme(), so brand colors are read inline on render.
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BackHandler,
   SafeAreaView,
@@ -15,10 +17,11 @@ import {
 } from 'react-native';
 import MCIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { getSession, loadSession } from './api';
+import { ScreenStack } from './components/ScreenStack';
 import { Loading } from './components/ui';
 // import { SCHOOL_NAME, sessionLabel } from './config';
 import { useI18n } from './hooks';
-import { loadLang } from './i18n';
+import { loadLang, t } from './i18n';
 import Login from './screens/Login';
 import { SCREENS, homeForRole } from './routes';
 import type { RouteName, ScreenEntry } from './routes';
@@ -26,16 +29,28 @@ import { colors } from './theme';
 import type { NavigateFn, RouteParams, Session } from './types';
 
 interface StackEntry {
+  /** Unique per push, so a screen keeps its identity while it animates. */
+  key: string;
   route: RouteName;
   params?: RouteParams;
 }
+
+const HOME_KEY = 'home';
+let lastEntryId = 0;
+
+const entryKey = (entry: StackEntry) => entry.key;
+const entryTransition = (entry: StackEntry) => {
+  const screen: ScreenEntry | undefined = SCREENS[entry.route];
+  return screen?.transition;
+};
 
 export default function App() {
   const [booted, setBooted] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [stack, setStack] = useState<StackEntry[]>([]); // pushed on top of home
 
-  const { t } = useI18n();
+  // Re-render the whole app when the language changes (screens call t()).
+  useI18n();
 
   useEffect(() => {
     Promise.all([loadSession(), loadLang()]).then(() => {
@@ -44,7 +59,10 @@ export default function App() {
     });
   }, []);
 
-  const navigate = useCallback<NavigateFn>((route, params) => setStack(s => [...s, { route, params }]), []);
+  const navigate = useCallback<NavigateFn>((route, params) => {
+    const key = `${route}-${++lastEntryId}`;
+    setStack(s => [...s, { key, route, params }]);
+  }, []);
   const goBack = useCallback(() => setStack(s => s.slice(0, -1)), []);
 
   // Android hardware back: pop the stack before exiting
@@ -69,22 +87,53 @@ export default function App() {
     setSession(null);
   };
 
+  // Home plus everything pushed on top of it — the stack <ScreenStack> draws.
+  const homeRoute = session ? homeForRole(session.user_type) : null;
+  const entries = useMemo<StackEntry[]>(
+    () => (homeRoute ? [{ key: HOME_KEY, route: homeRoute }, ...stack] : []),
+    [homeRoute, stack],
+  );
+
   if (!booted) return <Loading />;
   if (!session) return <Login onLogin={handleLogin} />;
-
-  const homeRoute = homeForRole(session.user_type);
-  const top: StackEntry = stack.length ? stack[stack.length - 1] : { route: homeRoute };
-  const screen: ScreenEntry = SCREENS[top.route] || SCREENS[homeRoute];
-  const ActiveScreen = screen.component;
-  const atHome = stack.length === 0;
-  const title =
-    top.params?.title || (screen.titleKey ? t(screen.titleKey) : screen.title ? t(screen.title) : 'EduManage');
-  const noticeRoute: RouteName = session.user_type === 'student' ? 'Notices' : 'StaffNotices';
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.brandDark }]}>
       <StatusBar barStyle="light-content" backgroundColor={colors.brandDark} />
+      <ScreenStack
+        entries={entries}
+        keyOf={entryKey}
+        transitionOf={entryTransition}
+        backdropColor={colors.brandDark}
+        screenColor={colors.page}
+        renderScreen={entry => (
+          <Page entry={entry} session={session} navigate={navigate} goBack={goBack} onLogout={handleLogout} />
+        )}
+      />
+    </SafeAreaView>
+  );
+}
 
+interface PageProps {
+  entry: StackEntry;
+  session: Session;
+  navigate: NavigateFn;
+  goBack: () => void;
+  onLogout: () => void;
+}
+
+/** One stack entry: its top bar plus the screen itself. */
+function Page({ entry, session, navigate, goBack, onLogout }: PageProps) {
+  const homeRoute = homeForRole(session.user_type);
+  const screen: ScreenEntry = SCREENS[entry.route] || SCREENS[homeRoute];
+  const ActiveScreen = screen.component;
+  const atHome = entry.key === HOME_KEY;
+  const title =
+    entry.params?.title || (screen.titleKey ? t(screen.titleKey) : screen.title ? t(screen.title) : 'EduManage');
+  const noticeRoute: RouteName = session.user_type === 'student' ? 'Notices' : 'StaffNotices';
+
+  return (
+    <>
       {/* top bar — school branding on home, back+title inside */}
       <View style={[styles.topbar, { backgroundColor: colors.brand }]}>
         {!atHome && (
@@ -118,12 +167,12 @@ export default function App() {
         <ActiveScreen
           navigate={navigate}
           goBack={goBack}
-          params={top.params}
+          params={entry.params}
           session={session}
-          onLogout={handleLogout}
+          onLogout={onLogout}
         />
       </View>
-    </SafeAreaView>
+    </>
   );
 }
 

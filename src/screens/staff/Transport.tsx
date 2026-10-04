@@ -1,7 +1,7 @@
 // Transport — vehicles & routes. Managers manage; drivers see their fleet.
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { api } from '../../api';
+import { api, peek } from '../../api';
 import {
   Badge,
   Button,
@@ -12,9 +12,11 @@ import {
   Fab,
   IconStat,
   Input,
-  Loading,
+  ListSkeleton,
   Screen,
+  ScreenSkeleton,
   Sheet,
+  StatTilesSkeleton,
 } from '../../components/ui';
 import { MANAGER_ROLES } from '../../roles';
 import { colors } from '../../theme';
@@ -25,8 +27,8 @@ const EMPTY = { vehicle_no: '', driver_name: '', driver_phone: '', route_name: '
 
 export default function Transport({ session }: ScreenProps) {
   const canEdit = MANAGER_ROLES.includes(session.user_type);
-  const [stats, setStats] = useState<VehicleStats | null>(null);
-  const [items, setItems] = useState<Vehicle[] | null>(null);
+  const [stats, setStats] = useState<VehicleStats | null>(() => peek<VehicleStats>('/vehicles/stats'));
+  const [items, setItems] = useState<Vehicle[] | null>(() => peek<Vehicle[]>('/vehicles'));
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [editing, setEditing] = useState<{ id?: number; form: typeof EMPTY } | null>(null);
@@ -35,8 +37,9 @@ export default function Transport({ session }: ScreenProps) {
   const load = useCallback(async (r = false) => {
     r && setRefreshing(true);
     try {
-      setStats(await api('/vehicles/stats'));
-      setItems(await api('/vehicles'));
+      const [s, list] = await Promise.all([api('/vehicles/stats'), api('/vehicles')]);
+      setStats(s);
+      setItems(list);
       setError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -73,7 +76,14 @@ export default function Transport({ session }: ScreenProps) {
     }
   };
 
-  if (!items && !error) return <Loading />;
+  if (!items && !error) {
+    return (
+      <ScreenSkeleton>
+        <StatTilesSkeleton count={3} />
+        <ListSkeleton badge="right" lines={2} action count={3} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>

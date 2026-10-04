@@ -1,18 +1,20 @@
 // Fee payment claims review — teachers + managers can approve/reject.
 // Shows the parent's payment-proof screenshot inline.
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { api, photoUrl } from '../../api';
+import { api, peek, photoUrl } from '../../api';
 import {
   Avatar,
   Badge,
   Button,
   Card,
+  ChipsSkeleton,
   Empty,
   ErrorBox,
   Input,
-  Loading,
-  Screen,
+  ListScreen,
+  ListSkeleton,
+  ScreenSkeleton,
   Segments,
   Sheet,
   fmtDate,
@@ -23,7 +25,7 @@ import type { FeeClaim } from '../../types';
 import { t } from '../../i18n';
 
 export default function FeeClaims() {
-  const [items, setItems] = useState<FeeClaim[] | null>(null);
+  const [items, setItems] = useState<FeeClaim[] | null>(() => peek<FeeClaim[]>('/fees/claims?status_filter=pending'));
   const [filter, setFilter] = useState('pending');
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -46,6 +48,11 @@ export default function FeeClaims() {
     load();
   }, [load]);
 
+  const openReview = useCallback((c: FeeClaim) => {
+    setReviewing(c);
+    setNote('');
+  }, []);
+
   const review = async (action: 'approve' | 'reject') => {
     if (!reviewing) return;
     setBusy(true);
@@ -64,11 +71,26 @@ export default function FeeClaims() {
     }
   };
 
-  if (!items && !error) return <Loading />;
+  if (!items && !error) {
+    return (
+      <ScreenSkeleton>
+        <ChipsSkeleton count={4} />
+        <ListSkeleton avatar={38} badge="right" lines={1} block={20} action count={3} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen refreshing={refreshing} onRefresh={() => load(true)}>
+      <ListScreen
+        data={items}
+        keyExtractor={c => c.id}
+        renderItem={c => <ClaimRow claim={c} onOpen={openReview} />}
+        empty={<Empty icon="🧾" text={filter ? t(`No ${filter} claims.`) : t('No claims.')} />}
+        refreshing={refreshing}
+        onRefresh={() => load(true)}
+        header={
+          <>
         <ErrorBox message={error} />
         <Segments
           items={[
@@ -80,41 +102,9 @@ export default function FeeClaims() {
           value={filter}
           onChange={setFilter}
         />
-        {items?.length === 0 && <Empty icon="🧾" text={filter ? t(`No ${filter} claims.`) : t('No claims.')} />}
-        {items?.map(c => (
-          <Card key={c.id}>
-            <View style={styles.head}>
-              <Avatar name={c.student_name} uri={photoUrl(c.photo_path)} size={38} />
-              <View style={{ flex: 1, marginLeft: 10 }}>
-                <Text style={styles.student}>{c.student_name}</Text>
-                <Text style={styles.sub}>
-                  {c.class_name || '—'}{c.section_name ? ` / ${c.section_name}` : ''} · {c.fee_title}
-                </Text>
-              </View>
-              <Badge status={c.status} />
-            </View>
-            <View style={styles.metaRow}>
-              <Text style={styles.amount}>{inr(c.amount ?? c.fee_amount)}</Text>
-              <Text style={styles.sub}>
-                {String(c.method).toUpperCase()}{c.reference_no ? ` · #${c.reference_no}` : ''} · {fmtDate(c.created_at)}
-              </Text>
-            </View>
-            {c.note ? <Text style={[styles.sub, { marginTop: 4 }]}>💬 {c.note}</Text> : null}
-            {c.reviewed_by_name ? (
-              <Text style={[styles.sub, { marginTop: 4 }]}>
-                {t('Reviewed by {name}', { name: c.reviewed_by_name })}{c.review_note ? ` — ${c.review_note}` : ''}
-              </Text>
-            ) : null}
-            <Button
-              label={c.status === 'pending' ? `🖼️ ${t('View proof & review')}` : `🖼️ ${t('View proof')}`}
-              kind="soft"
-              small
-              onPress={() => { setReviewing(c); setNote('') }}
-              style={{ marginTop: 10 }}
-            />
-          </Card>
-        ))}
-      </Screen>
+          </>
+        }
+      />
 
       <Sheet
         visible={!!reviewing}
@@ -152,6 +142,43 @@ export default function FeeClaims() {
     </View>
   );
 }
+
+/** One claim card; memoised so typing a review note doesn't redraw the list. */
+const ClaimRow = memo(function ClaimRow({ claim: c, onOpen }: { claim: FeeClaim; onOpen: (c: FeeClaim) => void }) {
+  return (
+    <Card>
+      <View style={styles.head}>
+        <Avatar name={c.student_name} uri={photoUrl(c.photo_path)} size={38} />
+        <View style={{ flex: 1, marginLeft: 10 }}>
+          <Text style={styles.student}>{c.student_name}</Text>
+          <Text style={styles.sub}>
+            {c.class_name || '—'}{c.section_name ? ` / ${c.section_name}` : ''} · {c.fee_title}
+          </Text>
+        </View>
+        <Badge status={c.status} />
+      </View>
+      <View style={styles.metaRow}>
+        <Text style={styles.amount}>{inr(c.amount ?? c.fee_amount)}</Text>
+        <Text style={styles.sub}>
+          {String(c.method).toUpperCase()}{c.reference_no ? ` · #${c.reference_no}` : ''} · {fmtDate(c.created_at)}
+        </Text>
+      </View>
+      {c.note ? <Text style={[styles.sub, { marginTop: 4 }]}>💬 {c.note}</Text> : null}
+      {c.reviewed_by_name ? (
+        <Text style={[styles.sub, { marginTop: 4 }]}>
+          {t('Reviewed by {name}', { name: c.reviewed_by_name })}{c.review_note ? ` — ${c.review_note}` : ''}
+        </Text>
+      ) : null}
+      <Button
+        label={c.status === 'pending' ? `🖼️ ${t('View proof & review')}` : `🖼️ ${t('View proof')}`}
+        kind="soft"
+        small
+        onPress={() => onOpen(c)}
+        style={{ marginTop: 10 }}
+      />
+    </Card>
+  );
+});
 
 const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center' },

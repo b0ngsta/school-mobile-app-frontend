@@ -352,6 +352,7 @@ const hi = {
   'Check out': 'चेक आउट',
   'Done for today': 'आज का काम पूरा',
   'Nothing here yet': 'अभी यहाँ कुछ नहीं है',
+  'Loading…': 'लोड हो रहा है…',
 
   // common words & actions
   All: 'सभी',

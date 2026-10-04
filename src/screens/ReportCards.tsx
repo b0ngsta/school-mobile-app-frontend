@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Card, Empty, ErrorBox, Loading, Screen, fmtDate } from '../components/ui';
+import { Card, Empty, ErrorBox, ListSkeleton, Screen, ScreenSkeleton, fmtDate } from '../components/ui';
 import { useApi, useI18n } from '../hooks';
 import { colors } from '../theme';
 import type { ReportCard } from '../types';
@@ -18,7 +18,13 @@ const parseGrades = (g: ReportCard['grades']): Record<string, string | number> |
 export default function ReportCards() {
   const { t } = useI18n();
   const { data, error, loading, refreshing, refresh } = useApi<ReportCard[]>('/student/report-cards');
-  if (loading) return <Loading />;
+  if (loading) {
+    return (
+      <ScreenSkeleton>
+        <ListSkeleton block={112} count={3} />
+      </ScreenSkeleton>
+    );
+  }
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
@@ -37,7 +43,7 @@ export default function ReportCards() {
                 {Object.entries(grades).map(([subject, grade]) => (
                   <View key={subject} style={styles.gradeRow}>
                     <Text style={styles.subject}>{subject}</Text>
-                    <Text style={styles.grade}>{String(grade)}</Text>
+                    <Text style={[styles.grade, { color: colors.brand }]}>{String(grade)}</Text>
                   </View>
                 ))}
               </View>
@@ -63,6 +69,6 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.line,
   },
   subject: { fontSize: 13, color: colors.ink, textTransform: 'capitalize' },
-  grade: { fontSize: 13, fontWeight: '700', color: colors.brand },
+  grade: { fontSize: 13, fontWeight: '700' },
   remarks: { fontSize: 13, color: colors.subtle, fontStyle: 'italic', marginTop: 10 },
 });

@@ -18,6 +18,9 @@ export interface Session {
   user_id: number;
   full_name: string;
   user_type: Role;
+  /** Brand color from the backend (e.g. "#BF40BF"). Optional — when missing
+   *  or invalid, the role theme is used. */
+  theme_color?: string | null;
 }
 
 /* ------------------------------- navigation ------------------------------ */

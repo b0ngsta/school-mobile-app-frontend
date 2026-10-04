@@ -4,14 +4,16 @@
 // UPDATES bar, then the 3-column launcher grid.
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { api, photoUrl } from '../../api';
+import { api, peek, photoUrl } from '../../api';
 import {
   Avatar,
+  Bone,
   ErrorBox,
-  Loading,
   MiniStat,
   Screen,
+  ScreenSkeleton,
   TileGrid,
+  TileGridSkeleton,
   UpdatesBar,
   inr,
 } from '../../components/ui';
@@ -73,20 +75,20 @@ export default function HomeStaff({ navigate, session }: ScreenProps) {
   const isTopManager = ['admin', 'principal'].includes(role);
   const grid = GRIDS[role === 'teacher' ? 'teacher' : role === 'driver' ? 'driver' : 'manager'];
 
-  const [me, setMe] = useState<AuthUser | null>(null);
+  const [me, setMe] = useState<AuthUser | null>(() => peek<AuthUser>('/auth/me'));
   const [today, setToday] = useState<StaffAttendanceRecord | null>(null);
-  const [feeStats, setFeeStats] = useState<FeeStats | null>(null);
-  const [payStats, setPayStats] = useState<TransactionStats | null>(null);
-  const [dashStats, setDashStats] = useState<DashboardStats | null>(null);
-  const [attStats, setAttStats] = useState<AttendanceStats | null>(null);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [feeStats, setFeeStats] = useState<FeeStats | null>(() => peek<FeeStats>('/fees/stats'));
+  const [payStats, setPayStats] = useState<TransactionStats | null>(() => peek<TransactionStats>('/transactions/stats'));
+  const [dashStats, setDashStats] = useState<DashboardStats | null>(() => peek<DashboardStats>('/dashboard/stats'));
+  const [attStats, setAttStats] = useState<AttendanceStats | null>(() => peek<AttendanceStats>('/attendance/stats'));
+  const [notice, setNotice] = useState<Notice | null>(() => peek<Notice[]>('/notices')?.[0] ?? null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => peek('/auth/me') === null);
   const [refreshing, setRefreshing] = useState(false);
   const [busyAtt, setBusyAtt] = useState(false);
 
   const load = useCallback(async (r = false) => {
-    r ? setRefreshing(true) : setLoading(true);
+    r ? setRefreshing(true) : setLoading(peek('/auth/me') === null);
     try {
       api('/auth/me').then(setMe).catch(() => {});
       api('/staff-attendance/today').then(setToday).catch(() => {});
@@ -123,7 +125,7 @@ export default function HomeStaff({ navigate, session }: ScreenProps) {
     }
   };
 
-  if (loading) return <Loading />;
+  if (loading) return <HomeStaffSkeleton tiles={grid.length} managerStats={isTopManager} />;
 
   const attLabel = !today?.in_time ? `✔ ${t('Check in')}` : !today?.out_time ? `✔ ${t('Check out')}` : `✅ ${t('Done for today')}`;
   const attDisabled = busyAtt || !!(today?.in_time && today?.out_time);
@@ -196,6 +198,34 @@ export default function HomeStaff({ navigate, session }: ScreenProps) {
   );
 }
 
+// Shown while the home loads: ID card, (admin) stat tiles, notice bar and
+// the launcher grid as placeholder bones.
+function HomeStaffSkeleton({ tiles, managerStats }: { tiles: number; managerStats: boolean }) {
+  return (
+    <ScreenSkeleton>
+      <View style={[styles.idCard, shadow.card]}>
+        <Bone width={54} height={54} radius={27} />
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <Bone width="70%" height={15} />
+          <Bone width="55%" height={10} style={{ marginTop: 8 }} />
+          <Bone width="40%" height={10} style={{ marginTop: 6 }} />
+        </View>
+        <Bone width={104} height={76} radius={12} />
+      </View>
+      {managerStats &&
+        [2, 2, 3].map((count, row) => (
+          <View key={row} style={[styles.tileRow, row === 2 && { marginBottom: 14 }]}>
+            {Array.from({ length: count }, (_, i) => (
+              <Bone key={i} height={54} radius={14} style={styles.miniStatBone} />
+            ))}
+          </View>
+        ))}
+      <Bone height={44} radius={14} style={{ marginBottom: 14 }} />
+      <TileGridSkeleton count={tiles} />
+    </ScreenSkeleton>
+  );
+}
+
 const styles = StyleSheet.create({
   idCard: {
     flexDirection: 'row',
@@ -222,4 +252,5 @@ const styles = StyleSheet.create({
   attVal: { fontSize: 11.5, fontWeight: '800', color: colors.ink },
   attBtn: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginTop: 6 },
   tileRow: { flexDirection: 'row', marginHorizontal: -3, marginBottom: 6 },
+  miniStatBone: { flex: 1, width: undefined, marginHorizontal: 3 },
 });

@@ -1,6 +1,18 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Badge, Card, Empty, ErrorBox, Loading, Row, Screen, SectionTitle } from '../components/ui';
+import {
+  Badge,
+  Bone,
+  Card,
+  Empty,
+  ErrorBox,
+  Row,
+  RowsSkeleton,
+  Screen,
+  ScreenSkeleton,
+  SectionTitle,
+  SectionTitleSkeleton,
+} from '../components/ui';
 import { fmtDate } from '../components/ui';
 import { useApi, useI18n } from '../hooks';
 import { colors } from '../theme';
@@ -9,7 +21,23 @@ import type { AttendanceResponse } from '../types';
 export default function Attendance() {
   const { t } = useI18n();
   const { data, error, loading, refreshing, refresh } = useApi<AttendanceResponse>('/student/attendance');
-  if (loading) return <Loading />;
+  if (loading) {
+    return (
+      <ScreenSkeleton>
+        <Card>
+          <Bone width={110} height={13} />
+          <Bone width={96} height={32} style={{ marginTop: 16, marginBottom: 12 }} />
+          <View style={styles.split}>
+            <Bone width={78} height={12} />
+            <Bone width={84} height={12} />
+            <Bone width={62} height={12} />
+          </View>
+        </Card>
+        <SectionTitleSkeleton />
+        <RowsSkeleton count={6} badge />
+      </ScreenSkeleton>
+    );
+  }
 
   const s = data?.summary;
 
